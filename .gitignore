@@ -1,4 +1,12 @@
-# Logs
+# 依存関係
+node_modules
+
+# ビルド出力
+dist
+dist-ssr
+*.local
+
+# ログ
 logs
 *.log
 npm-debug.log*
@@ -7,12 +15,15 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
-node_modules
-dist
-dist-ssr
-*.local
+# 環境変数
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
 
-# Editor directories and files
+
+# エディタ
 .vscode/*
 !.vscode/extensions.json
 .idea
