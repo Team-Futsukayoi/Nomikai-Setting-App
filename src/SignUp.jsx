@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { auth } from './firebaseConfig';  // 既存のFirebase設定をインポート
-import { createUserWithEmailAndPassword } from 'firebase/auth';  // ここで個別にインポート
+import { auth } from './firebaseConfig'; // 既存のFirebase設定をインポート
+import { createUserWithEmailAndPassword } from 'firebase/auth'; // ここで個別にインポート
 
 const SignUp = () => {
   const [email, setEmail] = useState('');
@@ -8,13 +8,20 @@ const SignUp = () => {
 
   const handleSignUp = async (e) => {
     e.preventDefault();
-    console.log("SignUp button clicked");
+    // eslint-disable-next-line no-console
+    console.log('SignUp button clicked');
     try {
       // createUserWithEmailAndPasswordを使ってサインアップ
-      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-      console.log("User signed up:", userCredential.user);
+      const userCredential = await createUserWithEmailAndPassword(
+        auth,
+        email,
+        password
+      );
+      // eslint-disable-next-line no-console
+      console.log('User signed up:', userCredential.user);
     } catch (error) {
-      console.error("Error signing up:", error.message);
+      // eslint-disable-next-line no-console
+      console.error('Error signing up:', error.message);
     }
   };
 
