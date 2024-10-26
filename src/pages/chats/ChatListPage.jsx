@@ -2,81 +2,63 @@ import {
     Box,
     Button,
     Container,
-    TextField
+    TextField,
+    Typography,
+    Avatar,
+    Grid,
+    Paper
 } from '@mui/material';
 
-//import { Button, Box } from 'react';
-//フレンドグループを選択したときの状態を保持するためのState
 import { useState, useEffect } from 'react';
 import FriendList from './FriendList';
 import GroupList from './GroupList';
 import { fetchFriendList } from './mock_api';
-import { db } from '../../firebaseConfig';// Firestoreの設定
-import { collection, addDoc } from 'firebase/firestore';// Firestoreでデータを保存するメソッド
-//import friendList from './test-data';
-// import FriendPage from './FriendList';
-// import GroupPage from './GroupList';
+import { db } from '../../firebaseConfig';
+import { collection, addDoc, getDocs } from 'firebase/firestore';
 
-
-//現時点ではユーザーの情報のみを付与
-//
-//testdata_userinfoの型定義
-/**
- * param {testdata_userinfo} ユーザー情報
- * userinfo.id: ユーザーID
- *  上のIDに関しては、FirebaseのFireStoreのIDを想定していました
- * userinfo.username: ユーザー名
- * userinfo.icon: ユーザーアイコン
- * @returns ChatListPage
- * 
- */
-
-
+// テスト用のユーザー情報を取得する関数
 function getUserInfo() {
-    const testdata_userinfo = { id: 1, username: "xyamyko", icon: "https://img.benesse-cms.jp/pet-dog/item/image/normal/resized/resized_5920ec8f-c0ae-4caa-8a37-25e538152b12.jpg" }
+    const testdata_userinfo = {
+        id: 1,
+        username: "xyamyko",
+        icon: "https://img.benesse-cms.jp/pet-dog/item/image/normal/resized/resized_5920ec8f-c0ae-4caa-8a37-25e538152b12.jpg"
+    };
     return testdata_userinfo;
 }
 
-
 export const ChatListPage = () => {
-    //閲覧する項目の選択状態を保持するState
-    //isFriendClisked:フックによって管理される変数
-    //setIsFriendClicked:変数を更新する"関数"
+    // 状態管理
     const [isFriendClicked, setIsFriendClicked] = useState(false);
     const [isGroupClicked, setIsGroupClicked] = useState(false);
     const [isFriendList, setIsFriendList] = useState([]);
     const [friendName, setFriendName] = useState('');
 
     const userinfo = getUserInfo();
-    //useEffectでAPIからフェッチ(BackEndからデータを取得)する
-    //レンダーの度にAPIを叩くのは非効率なので、useEffectを使って一度だけ取得する(現時点での設計)
+
+    // Firestoreからフレンドリストを取得する関数
+    const fetchFriendsFromFirestore = async () => {
+        const querySnapshot = await getDocs(collection(db, 'friends'));
+        const friends = querySnapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        }));
+        return friends;
+    };
+    
+    // コンポーネントマウント時にフレンドリストを取得
     useEffect(() => {
         const getFriends = async () => {
-            const friendList = await fetchFriendList();
+            const friendList = await fetchFriendsFromFirestore();
             if (Array.isArray(friendList)) {
                 setIsFriendList(friendList);
             } else {
                 setIsFriendList([friendList])
             }
-            //setIsFriendList(friendList);
         }
         getFriends();
-    },
-        //ここの[]は依存する変数がない場合にのみ実行される
-        //依存する関数とは、関数内で使用している変数のこと
-        //即ち、この場合は、関数内で使用している変数がない場合にのみ実行される
-        []);
+    }, []);
 
-    //ナビゲーション関数の読込
-    //const navigate = useNavigate();
-
-    //ボタン
-    //参考サイト-> https://react.school/ui/button
-    // const Button = styled.Button`
-    //     background-color: ${(props) => theme[porps.theme].default};
-    //     color: white;
-    //     padding: 5px 10px;
-    
+    // フレンド追加処理
     const handleAddFriend = async () => {
         if (friendName.trim()) {
             try {
@@ -85,78 +67,91 @@ export const ChatListPage = () => {
                     addedBy: userinfo.username,
                 });
                 console.log('フレンドを追加しました。ID:', docRef.id);
-                setFriendName('');//テキストフィールドを空にする
+                setFriendName('');
+                const updatedFriends = await fetchFriendsFromFirestore();
+                setIsFriendList(updatedFriends);
             } catch (error) {
                 console.error('エラーが発生しました:', error);
             }
         }
     };
-    // `;
-    return (
-        <>
-            <div>
-                <li>名前 {userinfo.username}</li>
-                <li>
-                    アイコン
-                    <img id="usericon" src={userinfo.icon} sizes='200px' />
-                </li>
-                {/* <icon src={testdata_userinfo.icon} /> */}
-            </div>
-            {/*</BrowserRouter>* onClick={<Link to="/FriendList" />}*/}
-            {/*onclickは関数を渡す必要有り*/}
-            <div>
-                <div>
-                    <button
-                        style={{ display: 'inline-block' }}
-                        //上手いことルート読まない
-                        onClick={() => {
-                            setIsFriendClicked(true);
-                            setIsGroupClicked(false);
-                            //console.log(isFriendList);
-                            console.log("FriendPage");
-                        }}
-                    >
-                        フレンド
-                    </button>
-                </div>
-                <div>
-                    <button
-                        style={{ display: 'inline-block' }}
-                        //onClick={() => navigate('../GroupList')}
-                        onClick={() => {
-                            //2行以上にまたぐJSは{}で囲む
-                            setIsGroupClicked(true);
-                            setIsFriendClicked(false);
-                            console.log("GroupPage");
-                        }}
-                    >
-                        グループ
 
-                    </button>
-                </div>
+    return (
+        <Container maxWidth="md">
+            <Box my={4}>
+                {/* ユーザー情報表示 */}
+                <Paper elevation={3} sx={{ p: 3, mb: 3 }}>
+                    <Grid container spacing={2} alignItems="center">
+                        <Grid item>
+                            <Avatar src={userinfo.icon} alt={userinfo.username} sx={{ width: 80, height: 80 }} />
+                        </Grid>
+                        <Grid item>
+                            <Typography variant="h5">{userinfo.username}</Typography>
+                        </Grid>
+                    </Grid>
+                </Paper>
+
+                {/* フレンド/グループ切り替えボタン */}
+                <Grid container spacing={2} justifyContent="center" sx={{ mb: 3 }}>
+                    <Grid item>
+                        <Button
+                            variant="contained"
+                            color={isFriendClicked ? "primary" : "secondary"}
+                            onClick={() => {
+                                setIsFriendClicked(true);
+                                setIsGroupClicked(false);
+                                console.log("FriendPage");
+                            }}
+                        >
+                            フレンド
+                        </Button>
+                    </Grid>
+                    <Grid item>
+                        <Button
+                            variant="contained"
+                            color={isGroupClicked ? "primary" : "secondary"}
+                            onClick={() => {
+                                setIsGroupClicked(true);
+                                setIsFriendClicked(false);
+                                console.log("GroupPage");
+                            }}
+                        >
+                            グループ
+                        </Button>
+                    </Grid>
+                </Grid>
+
                 {/* フレンド追加フォーム */}
-                <div>
-                    <TextField
-                        label="フレンド名"
-                        value={friendName}
-                        onChange={(e) => setFriendName(e.target.value)}
-                    />
-                    <Button
-                        variant="contained"
-                        color="primary"
-                        onClick={handleAddFriend}
-                        style={{ marginLeft: '10px' }}
-                    >
-                        フレンドを追加
-                    </Button>
-                </div>
+                <Paper elevation={3} sx={{ p: 3, mb: 3 }}>
+                    <Grid container spacing={2} alignItems="center">
+                        <Grid item xs={8}>
+                            <TextField
+                                label="フレンド名"
+                                value={friendName}
+                                onChange={(e) => setFriendName(e.target.value)}
+                                fullWidth
+                            />
+                        </Grid>
+                        <Grid item xs={4}>
+                            <Button
+                                variant="contained"
+                                color="primary"
+                                onClick={handleAddFriend}
+                                fullWidth
+                            >
+                                フレンドを追加
+                            </Button>
+                        </Grid>
+                    </Grid>
+                </Paper>
                 
-                <div>
+                {/* フレンドリストまたはグループリストの表示 */}
+                <Box>
                     {isFriendClicked && <FriendList friendList={isFriendList} />}
                     {isGroupClicked && <GroupList friendList={isFriendList} />}
-                </div>
-            </div>
-        </>
+                </Box>
+            </Box>
+        </Container>
     );
 };
 
