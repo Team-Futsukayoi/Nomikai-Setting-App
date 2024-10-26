@@ -8,13 +8,26 @@ import {
 } from '@mui/material';
 import { useState } from 'react';
 import { Link as RouterLink } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
+import { auth } from '../../firebaseConfig'; // Firebaseの設定ファイルをインポート
+import { signInWithEmailAndPassword } from 'firebase/auth';
 
 export const SignIn = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+  const navigate = useNavigate();
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    setError(''); // エラーのリセット
+
+    try {
+      await signInWithEmailAndPassword(auth, email, password);
+      navigate('/'); // ログイン成功時にホームページにリダイレクト
+    } catch (err) {
+      setError('ログインに失敗しました。メールアドレスまたはパスワードを確認してください。');
+    }
   };
 
   return (
