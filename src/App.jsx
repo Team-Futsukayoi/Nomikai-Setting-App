@@ -1,6 +1,8 @@
 import { Routes, Route } from 'react-router-dom';
-import SignUp from './pages/auth/SignUp';
-import SignIn from './pages/auth/SignIn';
+import { SignUp } from './pages/auth/SignUp';
+import { SignIn } from './pages/auth/SignIn';
+import { ChatListPage } from './pages/chats/ChatListPage';
+import ChatPage from './pages/chatpage/ChatPage';
 import SuccessPage from './pages/SuccessPage';
 import Header from './components/Header';
 import NavigationBar from './components/NavigationBar';
