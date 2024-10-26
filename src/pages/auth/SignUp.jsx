@@ -7,6 +7,7 @@ import {
   Stack,
   CircularProgress,
   Alert,
+  useMediaQuery,
 } from '@mui/material';
 import { useState } from 'react';
 import { Link as RouterLink, useNavigate } from 'react-router-dom';
@@ -90,9 +91,10 @@ export const SignUp = () => {
     }
   };
 
+  const isSmallScreen = useMediaQuery('(max-width:375px)');
   return (
     <Box sx={authStyles.gradientBackground}>
-      <Container maxWidth="sm">
+      <Container maxWidth={isSmallScreen ? 'xs' : 'sm'}>
         <Stack spacing={4} sx={{ width: '100%', alignItems: 'center' }}>
           <Box sx={authStyles.formContainer}>
             <Typography variant="h4" sx={authStyles.gradientText}>
