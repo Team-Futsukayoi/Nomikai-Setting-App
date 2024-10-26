@@ -1,5 +1,4 @@
 //import { Button, Box } from 'react';
-import { useNavigate } from 'react-router-dom';
 //フレンドグループを選択したときの状態を保持するためのState
 import { useState, useEffect } from 'react';
 import FriendList from './FriendList';
@@ -20,20 +19,35 @@ import { fetchFriendList } from './mock_api';
  * userinfo.username: ユーザー名
  * userinfo.icon: ユーザーアイコン
  * @returns ChatListPage
+ * 
  */
-const ChatListPage = (userinfo) => {
+
+
+function getUserInfo() {
+    const testdata_userinfo = { id: 1, username: "xyamyko", icon: "https://www.tbs.co.jp/anime/machikado/1st/special/img/special17/icon01.png" }
+    return testdata_userinfo;
+}
+
+
+export const ChatListPage = () => {
     //閲覧する項目の選択状態を保持するState
     //isFriendClisked:フックによって管理される変数
     //setIsFriendClicked:変数を更新する"関数"
     const [isFriendClicked, setIsFriendClicked] = useState(false);
     const [isGroupClicked, setIsGroupClicked] = useState(false);
     const [isFriendList, setIsFriendList] = useState([]);
+    const userinfo = getUserInfo();
     //useEffectでAPIからフェッチ(BackEndからデータを取得)する
     //レンダーの度にAPIを叩くのは非効率なので、useEffectを使って一度だけ取得する(現時点での設計)
     useEffect(() => {
         const getFriends = async () => {
             const friendList = await fetchFriendList();
-            setIsFriendList(friendList);
+            if (Array.isArray(friendList)) {
+                setIsFriendList(friendList);
+            } else {
+                setIsFriendList([friendList])
+            }
+            //setIsFriendList(friendList);
         }
         getFriends();
     },
@@ -73,7 +87,7 @@ const ChatListPage = (userinfo) => {
                     onClick={() => {
                         setIsFriendClicked(true);
                         setIsGroupClicked(false);
-                        console.log(isFriendList);
+                        //console.log(isFriendList);
                         console.log("FriendPage");
                     }}
                 >
@@ -91,8 +105,8 @@ const ChatListPage = (userinfo) => {
                 >
                     グループ
                 </button>
-                {isFriendClicked && <FriendList />}
-                {isGroupClicked && <GroupList {...isFriendList} />}
+                {isFriendClicked && <FriendList friendList={isFriendList} />}
+                {isGroupClicked && <GroupList />}
 
             </div>
 

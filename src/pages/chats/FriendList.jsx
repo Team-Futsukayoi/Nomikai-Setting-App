@@ -12,21 +12,24 @@ import { Button, Box } from 'react';
  */
 
 
-const FriendPage = (friendslist) => {
-    const friendList = friendslist
+const FriendPage = (friendList) => {
+    //const friendList = friendslist
+    //const friendsArray = Array.isArray(friendsList) ? friendsList : [friendsList];
+    const friendsArray = Array.isArray(friendList) ? friendList : [];
     return (
         <>
             <div>
                 this is FriendPage
                 <button onClick={
                     () => {
-                        console.log(friendList.id);
+                        console.log(friendsArray);
+                        console
                     }
                 }>
                     Check-toLoad
                 </button>
                 <ul>
-                    {friendList.map((id, name, iconUrl, isGroop) =>
+                    {friendList.map(({ id, name, iconUrl, isGroop }) =>
                         <li key={id}>
                             {name}
                             <img src={iconUrl} />
