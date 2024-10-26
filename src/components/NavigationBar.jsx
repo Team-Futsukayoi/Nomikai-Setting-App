@@ -1,79 +1,54 @@
-import { BottomNavigation, BottomNavigationAction } from '@mui/material';
-import HomeIcon from '@mui/icons-material/Home';
-import ChatIcon from '@mui/icons-material/Chat';
-import AccountCircleIcon from '@mui/icons-material/AccountCircle';
-import EventIcon from '@mui/icons-material/Event';
-import { useNavigate } from 'react-router-dom';
-import { useState } from 'react';
+import { BottomNavigation, BottomNavigationAction, Box } from '@mui/material';
+import HomeRoundedIcon from '@mui/icons-material/HomeRounded';
+import ChatRoundedIcon from '@mui/icons-material/ChatRounded';
+import AccountCircleRoundedIcon from '@mui/icons-material/AccountCircleRounded';
+import EventRoundedIcon from '@mui/icons-material/EventRounded';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import navbarStyles from '../styles/navbarStyles';
 
 const NavigationBar = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [value, setValue] = useState(0);
 
+  // パスに基づいて選択された値を更新
+  useEffect(() => {
+    const path = location.pathname;
+    if (path.includes('/home')) setValue(0);
+    else if (path.includes('/chat')) setValue(1);
+    else if (path.includes('/events')) setValue(2);
+    else if (path.includes('/profile')) setValue(3);
+  }, [location]);
+
+  const navigationItems = [
+    { label: 'ホーム', icon: HomeRoundedIcon, path: '/home' },
+    { label: 'チャット', icon: ChatRoundedIcon, path: '/chat' },
+    { label: 'イベント', icon: EventRoundedIcon, path: '/events' },
+    { label: 'プロフィール', icon: AccountCircleRoundedIcon, path: '/profile' },
+  ];
+
   return (
-    <BottomNavigation
-      value={value}
-      onChange={(event, newValue) => {
-        setValue(newValue);
-        if (newValue === 0) navigate('/home');
-        else if (newValue === 1) navigate('/chat');
-        else if (newValue === 2) navigate('/events');
-        else if (newValue === 3) navigate('/profile');
-      }}
-      showLabels
-      sx={{
-        position: 'fixed',
-        bottom: 0,
-        left: 0,
-        right: 0,
-        width: '100%',
-        backgroundColor: '#f9f9f9',
-        zIndex: 1000,
-        '& .Mui-selected': {
-          color: '#FFA500',
-        },
-        '& .MuiBottomNavigationAction-label': {
-          fontSize: '0.75rem',
-        },
-      }}
-    >
-      <BottomNavigationAction
-        label="ホーム"
-        icon={<HomeIcon sx={{ color: '#FFA500' }} />}
-        sx={{
-          '& .MuiBottomNavigationAction-label': {
-            fontSize: '0.65rem', // プロフィールのラベルサイズを変更
-          },
+    <Box sx={navbarStyles.container}>
+      <BottomNavigation
+        value={value}
+        onChange={(event, newValue) => {
+          setValue(newValue);
+          navigate(navigationItems[newValue].path);
         }}
-      />
-      <BottomNavigationAction
-        label="チャット"
-        icon={<ChatIcon sx={{ color: '#FFA500' }} />} // アイコンの色を変更
-        sx={{
-          '& .MuiBottomNavigationAction-label': {
-            fontSize: '0.65rem', // プロフィールのラベルサイズを変更
-          },
-        }}
-      />
-      <BottomNavigationAction
-        label="イベント"
-        icon={<EventIcon sx={{ color: '#FFA500' }} />} // アイコンの色を変更
-        sx={{
-          '& .MuiBottomNavigationAction-label': {
-            fontSize: '0.65rem', // プロフィールのラベルサイズを変更
-          },
-        }}
-      />
-      <BottomNavigationAction
-        label="プロフィール"
-        icon={<AccountCircleIcon sx={{ color: '#FFA500' }} />}
-        sx={{
-          '& .MuiBottomNavigationAction-label': {
-            fontSize: '0.65rem', // プロフィールのラベルサイズを変更
-          },
-        }}
-      />
-    </BottomNavigation>
+        showLabels
+        sx={navbarStyles.navigation}
+      >
+        {navigationItems.map((item) => (
+          <BottomNavigationAction
+            key={item.label}
+            label={item.label}
+            icon={<item.icon sx={navbarStyles.icon} />}
+            sx={navbarStyles.actionButton}
+          />
+        ))}
+      </BottomNavigation>
+    </Box>
   );
 };
 
