@@ -7,14 +7,24 @@ import {
   Avatar,
   Grid,
   Paper,
+  ThemeProvider,
 } from '@mui/material';
-
+import PersonAdd from '@mui/icons-material/PersonAdd';
+import Groups from '@mui/icons-material/Groups';
+import People from '@mui/icons-material/People';
 import { useState, useEffect } from 'react';
 import FriendList from './FriendList';
 import GroupList from './GroupList';
 import { fetchFriendList } from './mock_api';
 import { db } from '../../firebaseConfig';
 import { collection, addDoc, getDocs } from 'firebase/firestore';
+import { useAuth } from '../../hooks/useAuth';
+import {
+  theme,
+  StyledPaper,
+  StyledButton,
+  StyledTextField,
+} from '../../styles/chatlistpageStyles';
 
 // テスト用のユーザー情報を取得する関数
 function getUserInfo() {
@@ -27,6 +37,9 @@ function getUserInfo() {
 }
 
 export const ChatListPage = () => {
+  // ユーザー情報取得
+  const { currentUser } = useAuth();
+
   // 状態管理
   const [isFriendClicked, setIsFriendClicked] = useState(false);
   const [isGroupClicked, setIsGroupClicked] = useState(false);
@@ -64,7 +77,7 @@ export const ChatListPage = () => {
       try {
         const docRef = await addDoc(collection(db, 'friends'), {
           name: friendName,
-          addedBy: userinfo.username,
+          addedBy: currentUser?.username,
         });
         console.log('フレンドを追加しました。ID:', docRef.id);
         setFriendName('');
@@ -77,85 +90,100 @@ export const ChatListPage = () => {
   };
 
   return (
-    <Container maxWidth="md">
-      <Box my={4}>
-        {/* ユーザー情報表示 */}
-        <Paper elevation={3} sx={{ p: 3, mb: 3 }}>
-          <Grid container spacing={2} alignItems="center">
-            <Grid item>
-              <Avatar
-                src={userinfo.icon}
-                alt={userinfo.username}
-                sx={{ width: 80, height: 80 }}
-              />
-            </Grid>
-            <Grid item>
-              <Typography variant="h5">{userinfo.username}</Typography>
-            </Grid>
-          </Grid>
-        </Paper>
+    <ThemeProvider theme={theme}>
+      <Box sx={{ bgcolor: 'background.default', minHeight: '100vh', py: 4 }}>
+        <Container maxWidth="md">
+          <Box my={4}>
+            {/* ユーザー情報表示 */}
+            <StyledPaper sx={{ mb: 4 }}>
+              <Grid container spacing={3} alignItems="center">
+                <Grid item>
+                  <Avatar
+                    src={currentUser?.icon}
+                    alt={currentUser?.username}
+                    sx={{
+                      width: 100,
+                      height: 100,
+                      border: 4,
+                      borderColor: 'primary.main',
+                    }}
+                  />
+                </Grid>
+                <Grid item>
+                  <Typography
+                    variant="h4"
+                    fontWeight="bold"
+                    color="text.primary"
+                  >
+                    {currentUser?.username}
+                  </Typography>
+                  <Typography variant="subtitle1" color="text.secondary">
+                    オンライン
+                  </Typography>
+                </Grid>
+              </Grid>
+            </StyledPaper>
 
-        {/* フレンド/グループ切り替えボタン */}
-        <Grid container spacing={2} justifyContent="center" sx={{ mb: 3 }}>
-          <Grid item>
-            <Button
-              variant="contained"
-              color={isFriendClicked ? 'primary' : 'secondary'}
-              onClick={() => {
-                setIsFriendClicked(true);
-                setIsGroupClicked(false);
-                console.log('FriendPage');
-              }}
-            >
-              フレンド
-            </Button>
-          </Grid>
-          <Grid item>
-            <Button
-              variant="contained"
-              color={isGroupClicked ? 'primary' : 'secondary'}
-              onClick={() => {
-                setIsGroupClicked(true);
-                setIsFriendClicked(false);
-                console.log('GroupPage');
-              }}
-            >
-              グループ
-            </Button>
-          </Grid>
-        </Grid>
-
-        {/* フレンド追加フォーム */}
-        <Paper elevation={3} sx={{ p: 3, mb: 3 }}>
-          <Grid container spacing={2} alignItems="center">
-            <Grid item xs={8}>
-              <TextField
-                label="フレンド名"
-                value={friendName}
-                onChange={(e) => setFriendName(e.target.value)}
-                fullWidth
-              />
-            </Grid>
-            <Grid item xs={4}>
-              <Button
-                variant="contained"
-                color="primary"
-                onClick={handleAddFriend}
-                fullWidth
+            {/* フレンド/グループ切り替えボタン */}
+            <Box sx={{ display: 'flex', justifyContent: 'center', mb: 4 }}>
+              <StyledButton
+                variant={isFriendClicked ? 'contained' : 'outlined'}
+                startIcon={<People />}
+                onClick={() => {
+                  setIsFriendClicked(true);
+                  setIsGroupClicked(false);
+                }}
+                sx={{ mr: 2 }}
               >
-                フレンドを追加
-              </Button>
-            </Grid>
-          </Grid>
-        </Paper>
+                フレンド
+              </StyledButton>
+              <StyledButton
+                variant={isGroupClicked ? 'contained' : 'outlined'}
+                startIcon={<Groups />}
+                onClick={() => {
+                  setIsGroupClicked(true);
+                  setIsFriendClicked(false);
+                }}
+              >
+                グループ
+              </StyledButton>
+            </Box>
 
-        {/* フレンドリストまたはグループリストの表示 */}
-        <Box>
-          {isFriendClicked && <FriendList friendList={isFriendList} />}
-          {isGroupClicked && <GroupList friendList={isFriendList} />}
-        </Box>
+            {/* フレンド追加フォーム */}
+            <StyledPaper sx={{ mb: 4 }}>
+              <Grid container spacing={2} alignItems="center">
+                <Grid item xs={9}>
+                  <StyledTextField
+                    label="フレンド名を入力"
+                    value={friendName}
+                    onChange={(e) => setFriendName(e.target.value)}
+                    fullWidth
+                    variant="outlined"
+                    placeholder="新しいフレンドを追加"
+                  />
+                </Grid>
+                <Grid item xs={3}>
+                  <StyledButton
+                    variant="contained"
+                    startIcon={<PersonAdd />}
+                    onClick={handleAddFriend}
+                    fullWidth
+                  >
+                    追加
+                  </StyledButton>
+                </Grid>
+              </Grid>
+            </StyledPaper>
+
+            {/* リスト表示 */}
+            <StyledPaper>
+              {isFriendClicked && <FriendList friendList={isFriendList} />}
+              {isGroupClicked && <GroupList friendList={isFriendList} />}
+            </StyledPaper>
+          </Box>
+        </Container>
       </Box>
-    </Container>
+    </ThemeProvider>
   );
 };
 
