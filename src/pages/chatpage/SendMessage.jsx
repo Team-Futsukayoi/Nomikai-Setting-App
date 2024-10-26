@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
-import { Input } from '@mui/material';
+import { Input, IconButton } from '@mui/material';
 import SendIcon from '@mui/icons-material/Send';
 
-function SendMessage(addMessage) {
+function SendMessage({ addMessage }) {
   const [message, setMessage] = useState('');
   // eをつけないとフォームを送信したら勝手にレンダリングされてしまう。つけるとされない
   function sendMessage(e) {
@@ -37,7 +37,17 @@ function SendMessage(addMessage) {
             //valueはinputの中身の文字のこと。その中にmessageという変数を入れる
             value={message}
           />
-          <SendIcon />
+          {/* 送信ボタン */}
+          <IconButton
+            style={{
+              color: '#3CAEA3',
+              marginLeft: '10px',
+            }}
+            type="submit"
+            aria-label="send"
+          >
+            <SendIcon />
+          </IconButton>
         </div>
       </form>
     </div>
