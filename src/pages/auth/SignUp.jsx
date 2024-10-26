@@ -5,6 +5,7 @@ import {
   Typography,
   TextField,
   Stack,
+  CircularProgress,
 } from '@mui/material';
 import { useState } from 'react';
 import { Link as RouterLink, useNavigate } from 'react-router-dom';
@@ -16,10 +17,12 @@ export const SignUp = () => {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setLoading(true);
     try {
       await createUserWithEmailAndPassword(auth, email, password);
       setTimeout(() => {
@@ -27,9 +30,11 @@ export const SignUp = () => {
         navigate('/', {
           state: { successMessage: 'アカウントが作成されました。' },
         });
-      }, 1000);
+      }, 3000);
     } catch (error) {
       setError(error.message);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -94,8 +99,10 @@ export const SignUp = () => {
                 }}
                 size="large"
                 fullWidth
+                disabled={loading}
+                startIcon={loading && <CircularProgress size={24} />}
               >
-                登録
+                {loading ? '処理中...' : '登録'}
               </Button>
             </Stack>
           </form>
