@@ -25,7 +25,9 @@ const SuccessPage = () => {
       <SnackbarComponent
         open={open}
         message="ログインに成功しました"
-        onClose={handleClose}
+        handleClose={handleClose}
+        bottomOffset="80px"
+        autoHideDuration={3000} // 確認: 正しく設定されている
       />
       <Typography variant="h4" color="primary" gutterBottom>
         ログイン成功
