@@ -1,30 +1,28 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { db } from '../../firebaseConfig';
+import { collection, onSnapshot, query, orderBy } from 'firebase/firestore';
 import SendMessage from './SendMessage.jsx';
 import './ChatPage.css';
 
 function ChatPage() {
-  // setMessagesをつかうと、左にあるmessagesに値をどんどん入れていける（hooks）
-  const [messages, setMessages] = useState([
-    {
-      id: 1,
-      text: 'こんにちは！',
-      photoURL: 'https://via.placeholder.com/30',
-      uid: 'user1',
-    },
-    {
-      id: 2,
-      text: 'こんばんは！',
-      photoURL: 'https://via.placeholder.com/30',
-      uid: 'user2',
-    },
-  ]);
+  const [messages, setMessages] = useState([]);
 
-  const addMessage = (newMessage) => {
-    setMessages((prevMessages) => [
-      ...prevMessages,
-      { ...newMessage, id: prevMessages.length + 1 },
-    ]);
-  };
+  // Firestoreからメッセージを取得
+  useEffect(() => {
+    const messagesRef = collection(db, 'messages');
+    const q = query(messagesRef, orderBy('createdAt'));
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const newMessages = snapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
+      setMessages(newMessages);
+    });
+
+    // クリーンアップ
+    return () => unsubscribe();
+  }, []);
 
   return (
     <div>
@@ -38,7 +36,7 @@ function ChatPage() {
           </div>
         ))}
       </div>
-      <SendMessage addMessage={addMessage} />
+      <SendMessage />
     </div>
   );
 }
