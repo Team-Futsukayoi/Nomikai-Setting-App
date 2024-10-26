@@ -16,14 +16,14 @@ const NavigationBar = () => {
   useEffect(() => {
     const path = location.pathname;
     if (path.includes('/home')) setValue(0);
-    else if (path.includes('/chat')) setValue(1);
+    else if (path.includes('/chatlist')) setValue(1);
     else if (path.includes('/events')) setValue(2);
     else if (path.includes('/profile')) setValue(3);
   }, [location]);
 
   const navigationItems = [
     { label: 'ホーム', icon: HomeRoundedIcon, path: '/home' },
-    { label: 'チャット', icon: ChatRoundedIcon, path: '/chat' },
+    { label: 'チャット', icon: ChatRoundedIcon, path: '/chatlist' },
     { label: 'イベント', icon: EventRoundedIcon, path: '/events' },
     { label: 'プロフィール', icon: AccountCircleRoundedIcon, path: '/profile' },
   ];
