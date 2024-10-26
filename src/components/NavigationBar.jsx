@@ -23,7 +23,7 @@ const NavigationBar = () => {
 
   const navigationItems = [
     { label: 'ホーム', icon: HomeRoundedIcon, path: '/home' },
-    { label: 'チャット', icon: ChatRoundedIcon, path: '/chat' },
+    { label: 'チャット', icon: ChatRoundedIcon, path: '/chatlist' },
     { label: 'イベント', icon: EventRoundedIcon, path: '/events' },
     { label: 'プロフィール', icon: AccountCircleRoundedIcon, path: '/profile' },
   ];

@@ -18,16 +18,6 @@ export const FriendPage = ({ friendList }) => {
         フレンドリスト
       </Typography>
 
-      {/* デバッグ用：フレンドリストの内容をコンソールに出力するボタン */}
-      <Button
-        variant="contained"
-        color="primary"
-        onClick={() => console.log(friendList)}
-        sx={{ mb: 2 }}
-      >
-        Check-toLoad
-      </Button>
-
       {/* フレンドリストの表示 */}
       <List>
         {friendList.map(({ id, name, iconUrl, isGroop }) => {
