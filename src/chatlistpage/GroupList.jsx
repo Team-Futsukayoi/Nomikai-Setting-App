@@ -3,7 +3,7 @@ import { Button, Box } from 'react';
 
 
 
-const GroupPage = () => {
+const GroupList = () => {
     return (
         <div>
             this is GroupPage
@@ -11,4 +11,4 @@ const GroupPage = () => {
     )
 }
 
-export default GroupPage;
+export default GroupList;
