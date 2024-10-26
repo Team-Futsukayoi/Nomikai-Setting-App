@@ -6,15 +6,14 @@ import {
   TextField,
   Stack,
   Alert,
-  Snackbar,
   CircularProgress,
 } from '@mui/material';
 import { useState, useEffect } from 'react';
-import { Link as RouterLink } from 'react-router-dom';
+import { Link as RouterLink, useNavigate, useLocation } from 'react-router-dom';
 import { signInWithEmailAndPassword } from 'firebase/auth';
 import { auth } from '../../firebaseConfig';
-import { useNavigate } from 'react-router-dom';
-import { useLocation } from 'react-router-dom/dist';
+import { authStyles } from '../../styles/authStyles';
+import SnackbarComponent from '../../components/SnackbarComponent';
 
 export const SignIn = () => {
   const [email, setEmail] = useState('');
@@ -52,90 +51,88 @@ export const SignIn = () => {
   };
 
   return (
-    <Container
-      maxWidth="xs"
-      sx={{ py: { xs: 3, md: 6 }, display: 'flex', justifyContent: 'center' }}
-    >
-      <Stack spacing={8} sx={{ width: '100%', alignItems: 'center' }}>
-        <Box textAlign="center">
-          <Typography variant="h4" color="primary" gutterBottom>
-            飲み会セッティング
-          </Typography>
-          <Typography color="textSecondary">アカウントにサインイン</Typography>
-        </Box>
+    <Box sx={authStyles.gradientBackground}>
+      <Container maxWidth="sm">
+        <Stack spacing={4} sx={{ width: '100%', alignItems: 'center' }}>
+          <Box sx={authStyles.formContainer}>
+            <Typography variant="h4" sx={authStyles.gradientText}>
+              かんぱい！🍻
+            </Typography>
+            <Typography variant="body4" sx={{ mb: 4, color: 'text.secondary' }}>
+              サインインして仲間と乾杯しましょう！
+            </Typography>
 
-        <Box
-          sx={{
-            width: '100%',
-            maxWidth: 400,
-            backgroundColor: 'white',
-            p: 4,
-            borderRadius: 1,
-            boxShadow: 1,
-            border: 1,
-            borderColor: 'grey.100',
-          }}
-        >
-          <form onSubmit={handleSubmit}>
-            <Stack spacing={4}>
-              <TextField
-                label="メールアドレス"
-                type="email"
-                fullWidth
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-              />
-              <TextField
-                label="パスワード"
-                type="password"
-                fullWidth
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-              />
-              {error && <Alert severity="error">{error}</Alert>}
-              <Button
-                type="submit"
-                variant="contained"
-                sx={{
-                  backgroundColor: '#FFD700',
-                  color: '#000',
-                  '&:hover': { backgroundColor: '#FFC107' },
-                }}
-                size="large"
-                fullWidth
-                disabled={loading}
-                startIcon={loading && <CircularProgress size={24} />}
-              >
-                {loading ? '処理中...' : 'サインイン'}
-              </Button>
-            </Stack>
-          </form>
-        </Box>
-        <Typography>
-          アカウントをお持ちでない方は
-          <Button
-            component={RouterLink}
-            to="/signup"
-            variant="text"
-            color="primary"
-            sx={{ ml: 1 }}
-          >
-            新規登録
-          </Button>
-        </Typography>
-      </Stack>
+            <Box sx={{ mb: 3 }} />
 
-      <Snackbar
+            <form onSubmit={handleSubmit}>
+              <Stack spacing={3}>
+                <TextField
+                  label="メールアドレス"
+                  type="email"
+                  fullWidth
+                  required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  sx={authStyles.input}
+                />
+                <TextField
+                  label="パスワード"
+                  type="password"
+                  fullWidth
+                  required
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  sx={authStyles.input}
+                />
+
+                {error && (
+                  <Alert severity="error" sx={{ borderRadius: '12px' }}>
+                    {error}
+                  </Alert>
+                )}
+
+                <Button
+                  type="submit"
+                  variant="contained"
+                  disabled={loading}
+                  sx={authStyles.submitButton}
+                >
+                  {loading ? (
+                    <CircularProgress size={24} sx={{ color: '#000' }} />
+                  ) : (
+                    'サインイン'
+                  )}
+                </Button>
+              </Stack>
+            </form>
+
+            <Box sx={{ mt: 4, textAlign: 'center' }}>
+              <Typography variant="body2" color="text.secondary">
+                アカウントをお持ちでない方は
+                <Button
+                  component={RouterLink}
+                  to="/signup"
+                  sx={{
+                    ...authStyles.linkButton,
+                    textTransform: 'none',
+                    fontWeight: 600,
+                    ml: 1,
+                  }}
+                >
+                  新規登録
+                </Button>
+              </Typography>
+            </Box>
+          </Box>
+        </Stack>
+      </Container>
+
+      <SnackbarComponent
         open={open}
-        autoHideDuration={6000}
-        onClose={handleClose}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
-      >
-        <Alert onClose={handleClose} severity="success" sx={{ width: '100%' }}>
-          {successMessage}
-        </Alert>
-      </Snackbar>
-    </Container>
+        message={successMessage}
+        handleClose={handleClose}
+      />
+    </Box>
   );
 };
 
