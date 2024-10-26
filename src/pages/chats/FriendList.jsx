@@ -9,6 +9,7 @@ import {
   ListItemText,
   Avatar,
 } from '@mui/material';
+import { Link } from 'react-router-dom';
 
 export const FriendPage = ({ friendList }) => {
   return (
