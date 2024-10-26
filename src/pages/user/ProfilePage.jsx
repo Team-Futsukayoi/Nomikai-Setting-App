@@ -115,14 +115,15 @@ const ProfilePage = () => {
         try {
           const userDoc = await getDoc(doc(db, 'users', currentUser.uid));
           if (userDoc.exists()) {
-            setUser(userDoc.data());
-            setUsername(userDoc.data().username || '');
+            const userData = userDoc.data();
+            setUser(userData);
+            setUsername(userData.username || '');
+            console.log('User ID:', userData.userId);
           } else {
             setError('ユーザーデータが見つかりません');
           }
         } catch (err) {
           setError('データの取得中にエラーが発生しました');
-          // eslint-disable-next-line no-console
           console.error('Firestoreエラー:', err);
         } finally {
           setLoading(false);
@@ -145,7 +146,6 @@ const ProfilePage = () => {
         setTimeout(() => setUpdateSuccess(false), 3000);
       } catch (err) {
         setError('更新中にエラーが発生しました');
-        // eslint-disable-next-line no-console
         console.error('更新エラー:', err);
       }
     }
@@ -224,7 +224,7 @@ const ProfilePage = () => {
               />
             ) : (
               <Typography variant="h4" sx={{ fontWeight: 600 }}>
-                {user.username}
+                {user.userId}
               </Typography>
             )}
 
