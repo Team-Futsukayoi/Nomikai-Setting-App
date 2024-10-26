@@ -11,9 +11,10 @@ import {
 import { useState, useEffect } from 'react';
 import { Link as RouterLink, useNavigate, useLocation } from 'react-router-dom';
 import { signInWithEmailAndPassword } from 'firebase/auth';
-import { auth } from '../../firebaseConfig';
+import { auth, db } from '../../firebaseConfig';
 import { authStyles } from '../../styles/authStyles';
 import SnackbarComponent from '../../components/SnackbarComponent';
+import { doc, getDoc } from 'firebase/firestore';
 
 export const SignIn = () => {
   const [email, setEmail] = useState('');
@@ -44,7 +45,20 @@ export const SignIn = () => {
     }
 
     try {
-      await signInWithEmailAndPassword(auth, email, password);
+      const userCredential = await signInWithEmailAndPassword(
+        auth,
+        email,
+        password
+      );
+      const user = userCredential.user;
+
+      // Firestoreからuser情報を取得
+      const userDoc = await getDoc(doc(db, 'users', user.uid));
+      if (userDoc.exists()) {
+        const userData = userDoc.data();
+        console.log('User ID:', userData.userId);
+      }
+
       setError('');
       navigate('/success');
     } catch (error) {

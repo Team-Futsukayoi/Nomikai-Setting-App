@@ -10,13 +10,15 @@ import {
 } from '@mui/material';
 import { useState } from 'react';
 import { Link as RouterLink, useNavigate } from 'react-router-dom';
-import { auth } from '../../firebaseConfig';
+import { auth, db } from '../../firebaseConfig';
+import { doc, setDoc, getDoc } from 'firebase/firestore';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
 import { authStyles } from '../../styles/authStyles';
 
 export const SignUp = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [userId, setUserId] = useState('');
   const [error, setError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
   const [loading, setLoading] = useState(false);
@@ -27,23 +29,46 @@ export const SignUp = () => {
     setLoading(true);
 
     // Validation for email and password
-    if (!email || !password) {
-      setError('メールアドレスとパスワードを入力してください');
+    if (!email || !password || !userId) {
+      setError('メールアドレスとパスワード、ユーザIDを入力してください');
       setLoading(false);
       return;
     }
 
     try {
-      await createUserWithEmailAndPassword(auth, email, password);
-      setSuccessMessage('アカウントが作成されました。');
+      const userIdDoc = await getDoc(doc(db, 'userIds', userId));
+      if (userIdDoc.exists()) {
+        setError('このユーザIDは既に使用されています。');
+        setLoading(false);
+        return;
+      }
+
+      const userCredential = await createUserWithEmailAndPassword(
+        auth,
+        email,
+        password
+      );
+      const user = userCredential.user;
+
+      // Firestoreにユーザー情報を保存
+      await setDoc(doc(db, 'users', user.uid), {
+        email: user.email,
+        userId: userId,
+        createdAt: new Date(),
+      });
+
+      await setDoc(doc(db, 'userIds', userId), { uid: user.uid });
+
+      // setSuccessMessage('アカウントが作成されました。');
       setTimeout(() => {
         setSuccessMessage('');
         navigate('/', {
           state: { successMessage: 'アカウントが作成されました。' },
         });
-      }, 3000);
+      }, 1000);
     } catch (error) {
       // Firebaseエラーを日本語に翻訳
+      console.log('Error:', error.code);
       switch (error.code) {
         case 'auth/email-already-in-use':
           setError('このメールアドレスは既に使用されています。');
@@ -81,6 +106,15 @@ export const SignUp = () => {
 
             <form onSubmit={handleSubmit}>
               <Stack spacing={3}>
+                <TextField
+                  label="ユーザーID"
+                  type="text"
+                  fullWidth
+                  required
+                  value={userId}
+                  onChange={(e) => setUserId(e.target.value)}
+                  sx={authStyles.input}
+                />
                 <TextField
                   label="メールアドレス"
                   type="email"

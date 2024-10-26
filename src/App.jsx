@@ -7,6 +7,7 @@ import SuccessPage from './pages/SuccessPage';
 import Header from './components/Header';
 import NavigationBar from './components/NavigationBar';
 import { useLocation } from 'react-router-dom/dist';
+import ProfilePage from './pages/user/ProfilePage';
 
 function App() {
   const location = useLocation();
@@ -19,6 +20,7 @@ function App() {
         <Route path="/" element={<SignIn />} />
         <Route path="/signup" element={<SignUp />} />
         <Route path="/signin" element={<SignIn />} />
+        <Route path="/profile" element={<ProfilePage />} />
         <Route path="/success" element={<SuccessPage />} />
         <Route path="/chatlist" element={<ChatListPage />} />
         <Route path="/chat/:friendId" element={<ChatPage />} />
