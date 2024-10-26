@@ -13,15 +13,20 @@ import PersonAdd from '@mui/icons-material/PersonAdd';
 import Groups from '@mui/icons-material/Groups';
 import People from '@mui/icons-material/People';
 import { useState, useEffect } from 'react';
-import { Box, Button, Container, TextField, Typography, Avatar, Grid, Paper } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import { auth, db } from '../../firebaseConfig';
-import { collection, addDoc, getDocs, doc, getDoc, query, where } from 'firebase/firestore';
+import {
+  collection,
+  addDoc,
+  getDocs,
+  doc,
+  getDoc,
+  query,
+  where,
+} from 'firebase/firestore';
 import FriendList from './FriendList';
 import GroupList from './GroupList';
 import { fetchFriendList } from './mock_api';
-import { db } from '../../firebaseConfig';
-import { collection, addDoc, getDocs } from 'firebase/firestore';
 import { useAuth } from '../../hooks/useAuth';
 import {
   theme,
@@ -29,7 +34,6 @@ import {
   StyledButton,
   StyledTextField,
 } from '../../styles/chatlistpageStyles';
-
 
 export const ChatListPage = () => {
   // ユーザー情報取得
