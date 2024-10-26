@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { Alert, Container, Typography, Snackbar } from '@mui/material';
+import { Container, Typography } from '@mui/material';
+import SnackbarComponent from '../components/SnackbarComponent';
 
 const SuccessPage = () => {
   const [open, setOpen] = useState(true);
@@ -21,16 +22,11 @@ const SuccessPage = () => {
         alignItems: 'center',
       }}
     >
-      <Snackbar
+      <SnackbarComponent
         open={open}
-        autoHideDuration={6000}
+        message="ログインに成功しました"
         onClose={handleClose}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
-      >
-        <Alert onClose={handleClose} severity="success" sx={{ width: '100%' }}>
-          ログインに成功しました！
-        </Alert>
-      </Snackbar>
+      />
       <Typography variant="h4" color="primary" gutterBottom>
         ログイン成功
       </Typography>
