@@ -1,57 +1,43 @@
 import React, { useState } from 'react';
-import { Input, IconButton } from '@mui/material';
-import SendIcon from '@mui/icons-material/Send';
+import { db } from '../../firebaseConfig';
+import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 
-function SendMessage({ addMessage }) {
+const SendMessage = () => {
   const [message, setMessage] = useState('');
-  // eをつけないとフォームを送信したら勝手にレンダリングされてしまう。つけるとされない
-  function sendMessage(e) {
-    // formのonSubmitがsubmitが押されると自動で再ロードされるというデフォルトする機能をprevent(妨げる)する
+
+  const sendMessage = async (e) => {
     e.preventDefault();
     if (message.trim()) {
-      // 空白のみのメッセージを送信しない
-      addMessage({
-        text: message,
-        photoURL: 'https://via.placeholder.com/30',
-        uid: 'user1',
-      });
-      setMessage(''); // 入力フィールドをクリア
+      try {
+        await addDoc(collection(db, 'messages'), {
+          text: message,
+          uid: 'user1', // ここは適宜変更
+          photoURL: 'https://via.placeholder.com/30', // ここも適宜変更
+          createdAt: serverTimestamp(),
+        });
+        setMessage(''); // 送信後に入力欄をクリア
+      } catch (error) {
+        console.error('メッセージ送信エラー:', error);
+      }
     }
-  }
+  };
+
   return (
-    <div>
-      {/* onSubmitプロパティによって、打ち込んだテキストをDBに保存する */}
-      <form onSubmit={sendMessage}>
-        <div className="sendMsg">
-          <Input
-            style={{
-              width: '78%',
-              fontSize: '15px',
-              fontWeight: '550',
-              marginLeft: '5px',
-              marginBottom: '-3px',
-            }}
-            placeholder="メッセージを入力してください"
-            type="text"
-            onChange={(e) => setMessage(e.target.value)}
-            //valueはinputの中身の文字のこと。その中にmessageという変数を入れる
-            value={message}
-          />
-          {/* 送信ボタン */}
-          <IconButton
-            style={{
-              color: '#3CAEA3',
-              marginLeft: '10px',
-            }}
-            type="submit"
-            aria-label="send"
-          >
-            <SendIcon />
-          </IconButton>
-        </div>
-      </form>
-    </div>
+    <form onSubmit={sendMessage}>
+      <input
+        value={message}
+        onChange={(e) => setMessage(e.target.value)}
+        placeholder="メッセージを入力"
+      />
+      <button type="submit" style={{ 
+        backgroundColor: 'blue', 
+        color: 'white', 
+        padding: '10px 20px', 
+        borderRadius: '20px', 
+        cursor: 'pointer' 
+      }}>送信</button>
+    </form>
   );
-}
+};
 
 export default SendMessage;
