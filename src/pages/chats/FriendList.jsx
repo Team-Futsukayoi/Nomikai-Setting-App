@@ -28,7 +28,6 @@ export const FriendList = ({ friendList }) => {
         >
           フレンドリスト
         </Typography>
-
         <List sx={{ width: '100%' }}>
           {friendList.map(({ id, name, iconUrl, isGroop }) => {
             if (!isGroop) {

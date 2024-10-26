@@ -13,6 +13,10 @@ import PersonAdd from '@mui/icons-material/PersonAdd';
 import Groups from '@mui/icons-material/Groups';
 import People from '@mui/icons-material/People';
 import { useState, useEffect } from 'react';
+import { Box, Button, Container, TextField, Typography, Avatar, Grid, Paper } from '@mui/material';
+import { useNavigate } from 'react-router-dom';
+import { auth, db } from '../../firebaseConfig';
+import { collection, addDoc, getDocs, doc, getDoc, query, where } from 'firebase/firestore';
 import FriendList from './FriendList';
 import GroupList from './GroupList';
 import { fetchFriendList } from './mock_api';
@@ -26,15 +30,6 @@ import {
   StyledTextField,
 } from '../../styles/chatlistpageStyles';
 
-// テスト用のユーザー情報を取得する関数
-function getUserInfo() {
-  const testdata_userinfo = {
-    id: 1,
-    username: 'xyamyko',
-    icon: 'https://img.benesse-cms.jp/pet-dog/item/image/normal/resized/resized_5920ec8f-c0ae-4caa-8a37-25e538152b12.jpg',
-  };
-  return testdata_userinfo;
-}
 
 export const ChatListPage = () => {
   // ユーザー情報取得
@@ -45,35 +40,72 @@ export const ChatListPage = () => {
   const [isGroupClicked, setIsGroupClicked] = useState(false);
   const [isFriendList, setIsFriendList] = useState([]);
   const [friendName, setFriendName] = useState('');
+  const [userInfo, setUserInfo] = useState(null);
+  const navigate = useNavigate();
 
-  const userinfo = getUserInfo();
+  // const userinfo = getUserInfo();
+
+  useEffect(() => {
+    const unsubscribe = auth.onAuthStateChanged(async (user) => {
+      if (user) {
+        // ユーザーが認証されている場合、Firestoreからユーザー情報を取得
+        const userDoc = await getDoc(doc(db, 'users', user.uid));
+        if (userDoc.exists()) {
+          setUserInfo(userDoc.data());
+        }
+      } else {
+        // ユーザーが認証されていない場合、ログインページにリダイレクト
+        navigate('/signin');
+      }
+    });
+
+    return () => unsubscribe();
+  }, [navigate]);
 
   // Firestoreからフレンドリストを取得する関数
-  const fetchFriendsFromFirestore = async () => {
-    const querySnapshot = await getDocs(collection(db, 'friends'));
-    const friends = querySnapshot.docs.map((doc) => ({
-      id: doc.id,
-      ...doc.data(),
-    }));
-    return friends;
+  const fetchFriendsFromFirestore = async (userId) => {
+    try {
+      const friendsQuery = query(
+        collection(db, 'friends'),
+        where('addedBy', '==', userId)
+      );
+      const querySnapshot = await getDocs(friendsQuery);
+      const friends = querySnapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
+      return friends;
+    } catch (error) {
+      console.error('フレンドリストの取得に失敗しました:', error);
+      return [];
+    }
   };
 
-  // コンポーネントマウント時にフレンドリストを取得
+  // ユーザー情報とフレンドリストを取得
   useEffect(() => {
-    const getFriends = async () => {
-      const friendList = await fetchFriendsFromFirestore();
-      if (Array.isArray(friendList)) {
-        setIsFriendList(friendList);
+    const unsubscribe = auth.onAuthStateChanged(async (user) => {
+      if (user) {
+        // ユーザーが認証されている場合、Firestoreからユーザー情報を取得
+        const userDoc = await getDoc(doc(db, 'users', user.uid));
+        if (userDoc.exists()) {
+          const userData = userDoc.data();
+          setUserInfo(userData);
+          // ユーザー固有のフレンドリストを取得
+          const friendList = await fetchFriendsFromFirestore(userData.userId);
+          setIsFriendList(friendList);
+        }
       } else {
-        setIsFriendList([friendList]);
+        // ユーザーが認証されていない場合、ログインページにリダイレクト
+        navigate('/signin');
       }
-    };
-    getFriends();
-  }, []);
+    });
+
+    return () => unsubscribe();
+  }, [navigate]);
 
   // フレンド追加処理
   const handleAddFriend = async () => {
-    if (friendName.trim()) {
+    if (friendName.trim() && userInfo) {
       try {
         const docRef = await addDoc(collection(db, 'friends'), {
           name: friendName,
@@ -81,13 +113,18 @@ export const ChatListPage = () => {
         });
         console.log('フレンドを追加しました。ID:', docRef.id);
         setFriendName('');
-        const updatedFriends = await fetchFriendsFromFirestore();
+        // 更新されたフレンドリストを再取得
+        const updatedFriends = await fetchFriendsFromFirestore(userInfo.userId);
         setIsFriendList(updatedFriends);
       } catch (error) {
-        console.error('エラーが発生しました:', error);
+        console.error('フレンド追加中にエラーが発生しました:', error);
       }
     }
   };
+
+  if (!userInfo) {
+    return <div>Loading...</div>;
+  }
 
   return (
     <ThemeProvider theme={theme}>
