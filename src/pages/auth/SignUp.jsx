@@ -25,6 +25,14 @@ export const SignUp = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
+
+    // Validation for email and password
+    if (!email || !password) {
+      setError('メールアドレスとパスワードを入力してください');
+      setLoading(false);
+      return;
+    }
+
     try {
       await createUserWithEmailAndPassword(auth, email, password);
       setSuccessMessage('アカウントが作成されました。');
@@ -35,7 +43,23 @@ export const SignUp = () => {
         });
       }, 3000);
     } catch (error) {
-      setError(error.message);
+      // Firebaseエラーを日本語に翻訳
+      switch (error.code) {
+        case 'auth/email-already-in-use':
+          setError('このメールアドレスは既に使用されています。');
+          break;
+        case 'auth/invalid-email':
+          setError('無効なメールアドレスです。');
+          break;
+        case 'auth/operation-not-allowed':
+          setError('この操作は許可されていません。');
+          break;
+        case 'auth/weak-password':
+          setError('パスワードが弱すぎます。');
+          break;
+        default:
+          setError('アカウント作成に失敗しました。');
+      }
     } finally {
       setLoading(false);
     }
