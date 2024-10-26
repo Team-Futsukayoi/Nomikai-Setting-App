@@ -1,7 +1,8 @@
 import {
     Box,
     Button,
-    Container
+    Container,
+    TextField
 } from '@mui/material';
 
 //import { Button, Box } from 'react';
@@ -10,6 +11,8 @@ import { useState, useEffect } from 'react';
 import FriendList from './FriendList';
 import GroupList from './GroupList';
 import { fetchFriendList } from './mock_api';
+import { db } from '../../firebaseConfig';// Firestoreの設定
+import { collection, addDoc } from 'firebase/firestore';// Firestoreでデータを保存するメソッド
 //import friendList from './test-data';
 // import FriendPage from './FriendList';
 // import GroupPage from './GroupList';
@@ -42,6 +45,8 @@ export const ChatListPage = () => {
     const [isFriendClicked, setIsFriendClicked] = useState(false);
     const [isGroupClicked, setIsGroupClicked] = useState(false);
     const [isFriendList, setIsFriendList] = useState([]);
+    const [friendName, setFriendName] = useState('');
+
     const userinfo = getUserInfo();
     //useEffectでAPIからフェッチ(BackEndからデータを取得)する
     //レンダーの度にAPIを叩くのは非効率なので、useEffectを使って一度だけ取得する(現時点での設計)
@@ -71,8 +76,21 @@ export const ChatListPage = () => {
     //     background-color: ${(props) => theme[porps.theme].default};
     //     color: white;
     //     padding: 5px 10px;
-
-
+    
+    const handleAddFriend = async () => {
+        if (friendName.trim()) {
+            try {
+                const docRef = await addDoc(collection(db, 'friends'), {
+                    name: friendName,
+                    addedBy: userinfo.username,
+                });
+                console.log('フレンドを追加しました。ID:', docRef.id);
+                setFriendName('');//テキストフィールドを空にする
+            } catch (error) {
+                console.error('エラーが発生しました:', error);
+            }
+        }
+    };
     // `;
     return (
         <>
@@ -115,22 +133,31 @@ export const ChatListPage = () => {
                         グループ
 
                     </button>
-
                 </div>
+                {/* フレンド追加フォーム */}
+                <div>
+                    <TextField
+                        label="フレンド名"
+                        value={friendName}
+                        onChange={(e) => setFriendName(e.target.value)}
+                    />
+                    <Button
+                        variant="contained"
+                        color="primary"
+                        onClick={handleAddFriend}
+                        style={{ marginLeft: '10px' }}
+                    >
+                        フレンドを追加
+                    </Button>
+                </div>
+                
                 <div>
                     {isFriendClicked && <FriendList friendList={isFriendList} />}
                     {isGroupClicked && <GroupList friendList={isFriendList} />}
                 </div>
-
-
-
             </div>
-
-
-
         </>
-
-    )
-}
+    );
+};
 
 export default ChatListPage;
