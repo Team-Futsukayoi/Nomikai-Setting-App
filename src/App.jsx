@@ -20,6 +20,8 @@ function App() {
         <Route path="/signup" element={<SignUp />} />
         <Route path="/signin" element={<SignIn />} />
         <Route path="/success" element={<SuccessPage />} />
+        <Route path="/chatlist" element={<ChatListPage />} />
+        <Route path="/chat/:friendId" element={<ChatPage />} />
       </Routes>
       {!hideNavBarPaths.includes(location.pathname) && <NavigationBar />}
     </>
