@@ -36,6 +36,7 @@ export const FriendPage = ({ friendList }) => {
                                     {name}
                                     <img src={iconUrl} />
                                     {isGroop}
+                                    <button onClick={console.log("ChatListへの遷移")}>グループに参加</button>
                                 </li>
                             )
                         }

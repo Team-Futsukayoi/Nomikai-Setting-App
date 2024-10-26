@@ -1,3 +1,9 @@
+import {
+    Box,
+    Button,
+    Container
+} from '@mui/material';
+
 //import { Button, Box } from 'react';
 //フレンドグループを選択したときの状態を保持するためのState
 import { useState, useEffect } from 'react';
@@ -24,7 +30,7 @@ import { fetchFriendList } from './mock_api';
 
 
 function getUserInfo() {
-    const testdata_userinfo = { id: 1, username: "xyamyko", icon: "https://www.tbs.co.jp/anime/machikado/1st/special/img/special17/icon01.png" }
+    const testdata_userinfo = { id: 1, username: "xyamyko", icon: "https://img.benesse-cms.jp/pet-dog/item/image/normal/resized/resized_5920ec8f-c0ae-4caa-8a37-25e538152b12.jpg" }
     return testdata_userinfo;
 }
 

@@ -1,8 +1,8 @@
 //エラー原因判明- > exportのタイピング漏れ
 
 export const friendList = [
-  { id: 1, name: '山田太郎', iconUrl: 'https://unlimited.prompton.io/cdn/shop/files/93_s.png?v=1714052624&width=493', isGroop: false },
-  { id: 2, name: '鈴木花子', iconUrl: 'https://unlimited.prompton.io/cdn/shop/files/247_s.jpg?v=1725889379&width=493', isGroop: true },
-  { id: 3, name: '松下太郎', iconUrl: 'https://unlimited.prompton.io/cdn/shop/files/247_s.jpg?v=1725889379&width=493', isGroop: false },
+  { id: 1, name: '山田太郎', iconUrl: 'https://img.benesse-cms.jp/pet-dog/item/image/normal/resized/resized_5920ec8f-c0ae-4caa-8a37-25e538152b12.jpg', isGroop: false },
+  { id: 2, name: '鈴木花子', iconUrl: 'https://img.benesse-cms.jp/pet-dog/item/image/normal/resized/resized_5920ec8f-c0ae-4caa-8a37-25e538152b12.jpg', isGroop: true },
+  { id: 3, name: '松下太郎', iconUrl: 'https://img.benesse-cms.jp/pet-dog/item/image/normal/resized/resized_5920ec8f-c0ae-4caa-8a37-25e538152b12.jpg', isGroop: false },
   // ... その他のフレンドデータ
 ];
