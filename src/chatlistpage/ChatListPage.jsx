@@ -7,9 +7,8 @@ import GroupPage from './GroupList';
 // import FriendPage from './FriendList';
 // import GroupPage from './GroupList';
 
-
 //現時点ではユーザーの情報のみを付与
-
+//
 //testdata_userinfoの型定義
 /**
  * param {testdata_userinfo} ユーザー情報
