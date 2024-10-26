@@ -22,11 +22,12 @@ export const SignUp = () => {
     e.preventDefault();
     try {
       await createUserWithEmailAndPassword(auth, email, password);
-      setSuccessMessage('アカウントが作成されました。');
       setTimeout(() => {
         setSuccessMessage('');
-        navigate('/');
-      }, 5000);
+        navigate('/', {
+          state: { successMessage: 'アカウントが作成されました。' },
+        });
+      }, 1000);
     } catch (error) {
       setError(error.message);
     }
