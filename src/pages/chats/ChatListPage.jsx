@@ -81,32 +81,42 @@ export const ChatListPage = () => {
             {/*</BrowserRouter>* onClick={<Link to="/FriendList" />}*/}
             {/*onclickは関数を渡す必要有り*/}
             <div>
-                <button
-                    style={{ display: 'inline-block' }}
-                    //上手いことルート読まない
-                    onClick={() => {
-                        setIsFriendClicked(true);
-                        setIsGroupClicked(false);
-                        //console.log(isFriendList);
-                        console.log("FriendPage");
-                    }}
-                >
-                    フレンド
-                </button>
-                <button
-                    style={{ display: 'inline-block' }}
-                    //onClick={() => navigate('../GroupList')}
-                    onClick={() => {
-                        //2行以上にまたぐJSは{}で囲む
-                        setIsGroupClicked(true);
-                        setIsFriendClicked(false);
-                        console.log("GroupPage");
-                    }}
-                >
-                    グループ
-                </button>
-                {isFriendClicked && <FriendList friendList={isFriendList} />}
-                {isGroupClicked && <GroupList />}
+                <div>
+                    <button
+                        style={{ display: 'inline-block' }}
+                        //上手いことルート読まない
+                        onClick={() => {
+                            setIsFriendClicked(true);
+                            setIsGroupClicked(false);
+                            //console.log(isFriendList);
+                            console.log("FriendPage");
+                        }}
+                    >
+                        フレンド
+                    </button>
+                </div>
+                <div>
+                    <button
+                        style={{ display: 'inline-block' }}
+                        //onClick={() => navigate('../GroupList')}
+                        onClick={() => {
+                            //2行以上にまたぐJSは{}で囲む
+                            setIsGroupClicked(true);
+                            setIsFriendClicked(false);
+                            console.log("GroupPage");
+                        }}
+                    >
+                        グループ
+
+                    </button>
+
+                </div>
+                <div>
+                    {isFriendClicked && <FriendList friendList={isFriendList} />}
+                    {isGroupClicked && <GroupList friendList={isFriendList} />}
+                </div>
+
+
 
             </div>
 

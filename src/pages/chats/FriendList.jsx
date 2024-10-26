@@ -4,38 +4,44 @@ import { Button, Box } from 'react';
  * 
  * @param {*} friendslist
  * @param {*} friendslist.id
- * @param {*} friendslist.name
+ * @param {*} friendslist.friendname
  * @param {*} friendslist.iconUrl
  * @param {*} friendslist.isGroop
  * 
  * @returns 
  */
 
-
-const FriendPage = (friendList) => {
+//{}で囲ったら動いた->分割代入
+export const FriendPage = ({ friendList }) => {
     //const friendList = friendslist
     //const friendsArray = Array.isArray(friendsList) ? friendsList : [friendsList];
-    const friendsArray = Array.isArray(friendList) ? friendList : [];
     return (
         <>
             <div>
                 this is FriendPage
                 <button onClick={
                     () => {
-                        console.log(friendsArray);
+                        console.log(friendList);
                         console
                     }
                 }>
                     Check-toLoad
                 </button>
                 <ul>
-                    {friendList.map(({ id, name, iconUrl, isGroop }) =>
-                        <li key={id}>
-                            {name}
-                            <img src={iconUrl} />
-                            {isGroop}
-                        </li>
-                    )}
+                    {friendList.map(({ id, name, iconUrl, isGroop }) => {
+                        console.log(isGroop)
+                        if (!isGroop) {
+                            return (
+                                <li key={id}>
+                                    {name}
+                                    <img src={iconUrl} />
+                                    {isGroop}
+                                </li>
+                            )
+                        }
+                    })}
+
+
                 </ul>
             </div>
         </>
