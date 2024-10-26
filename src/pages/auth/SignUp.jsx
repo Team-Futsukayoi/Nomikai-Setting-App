@@ -6,11 +6,13 @@ import {
   TextField,
   Stack,
   CircularProgress,
+  Alert,
 } from '@mui/material';
 import { useState } from 'react';
 import { Link as RouterLink, useNavigate } from 'react-router-dom';
 import { auth } from '../../firebaseConfig';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
+import { authStyles } from '../../styles/authStyles';
 
 export const SignUp = () => {
   const [email, setEmail] = useState('');
@@ -25,6 +27,7 @@ export const SignUp = () => {
     setLoading(true);
     try {
       await createUserWithEmailAndPassword(auth, email, password);
+      setSuccessMessage('アカウントが作成されました。');
       setTimeout(() => {
         setSuccessMessage('');
         navigate('/', {
@@ -39,89 +42,88 @@ export const SignUp = () => {
   };
 
   return (
-    <Container
-      maxWidth="xs"
-      sx={{ py: { xs: 3, md: 6 }, display: 'flex', justifyContent: 'center' }}
-    >
-      <Stack spacing={8} sx={{ width: '100%', alignItems: 'center' }}>
-        <Box textAlign="center">
-          <Typography variant="h4" color="primary" gutterBottom>
-            新規登録
-          </Typography>
-          <Typography color="textSecondary">アカウントを作成</Typography>
-        </Box>
+    <Box sx={authStyles.gradientBackground}>
+      <Container maxWidth="sm">
+        <Stack spacing={4} sx={{ width: '100%', alignItems: 'center' }}>
+          <Box sx={authStyles.formContainer}>
+            <Typography variant="h4" sx={authStyles.gradientText}>
+              ようこそ！🍻
+            </Typography>
+            <Typography variant="body4" sx={{ mb: 4, color: 'text.secondary' }}>
+              アカウントを作成して仲間と乾杯しましょう！
+            </Typography>
 
-        <Box
-          sx={{
-            width: '100%',
-            maxWidth: 400,
-            backgroundColor: 'white',
-            p: 4,
-            borderRadius: 1,
-            boxShadow: 1,
-            border: 1,
-            borderColor: 'grey.100',
-          }}
-        >
-          <form onSubmit={handleSubmit}>
-            <Stack spacing={4}>
-              <TextField
-                label="メールアドレス"
-                type="email"
-                fullWidth
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-              />
-              <TextField
-                label="パスワード"
-                type="password"
-                fullWidth
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-              />
-              {error && (
-                <Typography color="error" variant="body2">
-                  {error}
-                </Typography>
-              )}
-              {successMessage && (
-                <Typography color="success" variant="body2">
-                  {successMessage}
-                </Typography>
-              )}
-              <Button
-                type="submit"
-                variant="contained"
-                sx={{
-                  backgroundColor: '#FFD700',
-                  color: '#000',
-                  '&:hover': { backgroundColor: '#FFC107' },
-                }}
-                size="large"
-                fullWidth
-                disabled={loading}
-                startIcon={loading && <CircularProgress size={24} />}
-              >
-                {loading ? '処理中...' : '登録'}
-              </Button>
-            </Stack>
-          </form>
-        </Box>
+            <Box sx={{ mb: 3 }} />
 
-        <Typography>
-          すでにアカウントをお持ちの方は
-          <Button
-            component={RouterLink}
-            to="/signin"
-            variant="text"
-            color="primary"
-            sx={{ ml: 1 }}
-          >
-            サインイン
-          </Button>
-        </Typography>
-      </Stack>
-    </Container>
+            <form onSubmit={handleSubmit}>
+              <Stack spacing={3}>
+                <TextField
+                  label="メールアドレス"
+                  type="email"
+                  fullWidth
+                  required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  sx={authStyles.input}
+                />
+                <TextField
+                  label="パスワード"
+                  type="password"
+                  fullWidth
+                  required
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  sx={authStyles.input}
+                />
+
+                {error && (
+                  <Alert severity="error" sx={{ borderRadius: '12px' }}>
+                    {error}
+                  </Alert>
+                )}
+
+                {successMessage && (
+                  <Alert severity="success" sx={{ borderRadius: '12px' }}>
+                    {successMessage}
+                  </Alert>
+                )}
+
+                <Button
+                  type="submit"
+                  variant="contained"
+                  disabled={loading}
+                  sx={authStyles.submitButton}
+                >
+                  {loading ? (
+                    <CircularProgress size={24} sx={{ color: '#000' }} />
+                  ) : (
+                    '登録する'
+                  )}
+                </Button>
+              </Stack>
+            </form>
+
+            <Box sx={{ mt: 4, textAlign: 'center' }}>
+              <Typography variant="body2" color="text.secondary">
+                すでにアカウントをお持ちの方は
+                <Button
+                  component={RouterLink}
+                  to="/signin"
+                  sx={{
+                    ...authStyles.linkButton,
+                    textTransform: 'none',
+                    fontWeight: 600,
+                    ml: 1,
+                  }}
+                >
+                  サインイン
+                </Button>
+              </Typography>
+            </Box>
+          </Box>
+        </Stack>
+      </Container>
+    </Box>
   );
 };
 
