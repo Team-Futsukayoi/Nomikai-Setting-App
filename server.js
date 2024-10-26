@@ -1,10 +1,14 @@
 const express = require('express');
+const path = require('path');
 const app = express();
 const port = 4000;
 
-// ルートエンドポイントのハンドラー
-app.get('/', (req, res) => {
-  res.send('Hello from Express!');
+// Reactのビルドされた静的ファイルを提供
+app.use(express.static(path.join(__dirname, 'dist')));
+
+// すべてのルートでReactのindex.htmlを返す
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, 'dist', 'index.html'));
 });
 
 // サーバーを起動
