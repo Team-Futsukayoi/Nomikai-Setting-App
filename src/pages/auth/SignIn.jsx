@@ -5,16 +5,29 @@ import {
   Typography,
   TextField,
   Stack,
+  Alert,
 } from '@mui/material';
 import { useState } from 'react';
 import { Link as RouterLink } from 'react-router-dom';
+import { signInWithEmailAndPassword } from 'firebase/auth';
+import { auth } from '../../firebaseConfig';
+import { useNavigate } from 'react-router-dom';
 
 export const SignIn = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+  const navigate = useNavigate();
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    try {
+      await signInWithEmailAndPassword(auth, email, password);
+      setError('');
+      navigate('/success');
+    } catch (error) {
+      setError(error.message);
+    }
   };
 
   return (
@@ -25,7 +38,7 @@ export const SignIn = () => {
       <Stack spacing={8} sx={{ width: '100%', alignItems: 'center' }}>
         <Box textAlign="center">
           <Typography variant="h4" color="primary" gutterBottom>
-            飲み会管理アプリ
+            飲み会セッティング
           </Typography>
           <Typography color="textSecondary">アカウントにサインイン</Typography>
         </Box>
@@ -58,6 +71,7 @@ export const SignIn = () => {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
               />
+              {error && <Alert severity="error">{error}</Alert>}
               <Button
                 type="submit"
                 variant="contained"
@@ -74,7 +88,6 @@ export const SignIn = () => {
             </Stack>
           </form>
         </Box>
-
         <Typography>
           アカウントをお持ちでない方は
           <Button
