@@ -7,6 +7,7 @@ import {
   Stack,
   Alert,
   Snackbar,
+  CircularProgress,
 } from '@mui/material';
 import { useState, useEffect } from 'react';
 import { Link as RouterLink } from 'react-router-dom';
@@ -21,6 +22,7 @@ export const SignIn = () => {
   const [error, setError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
   const [open, setOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -33,12 +35,15 @@ export const SignIn = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setLoading(true);
     try {
       await signInWithEmailAndPassword(auth, email, password);
       setError('');
       navigate('/success');
     } catch (error) {
       setError(error.message);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -98,8 +103,10 @@ export const SignIn = () => {
                 }}
                 size="large"
                 fullWidth
+                disabled={loading}
+                startIcon={loading && <CircularProgress size={24} />}
               >
-                サインイン
+                {loading ? '処理中...' : 'サインイン'}
               </Button>
             </Stack>
           </form>
