@@ -10,8 +10,7 @@ import {
 } from '@mui/material';
 import { useState } from 'react';
 import { Link as RouterLink, useNavigate } from 'react-router-dom';
-import { auth } from '../../firebaseConfig';
-import { db } from '../../firebaseConfig';
+import { auth, db } from '../../firebaseConfig';
 import { doc, setDoc, getDoc } from 'firebase/firestore';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
 import { authStyles } from '../../styles/authStyles';
@@ -69,6 +68,7 @@ export const SignUp = () => {
       }, 1000);
     } catch (error) {
       // Firebaseエラーを日本語に翻訳
+      console.log('Error:', error.code);
       switch (error.code) {
         case 'auth/email-already-in-use':
           setError('このメールアドレスは既に使用されています。');
