@@ -35,12 +35,36 @@ export const SignIn = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
+
+    // Validation for email and password
+    if (!email || !password) {
+      setError('メールアドレスとパスワードを入力してください');
+      setLoading(false);
+      return;
+    }
+
     try {
       await signInWithEmailAndPassword(auth, email, password);
       setError('');
       navigate('/success');
     } catch (error) {
-      setError(error.message);
+      // Translate error message to Jap
+      switch (error.code) {
+        case 'auth/invalid-email':
+          setError('無効なメールアドレスです');
+          break;
+        case 'auth/user-disabled':
+          setError('このユーザーは無効になっています');
+          break;
+        case 'auth/user-not-found':
+          setError('ユーザーが見つかりません');
+          break;
+        case 'auth/wrong-password':
+          setError('パスワードが間違っています');
+          break;
+        default:
+          setError('サインインに失敗しました');
+      }
     } finally {
       setLoading(false);
     }
