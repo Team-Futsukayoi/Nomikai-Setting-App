@@ -9,7 +9,7 @@ const SnackbarComponent = ({ open, message, handleClose }) => {
       anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
       sx={{
         position: 'fixed',
-        bottom: '67px',
+        bottom: '90px',
         zIndex: 1100,
       }}
     >
