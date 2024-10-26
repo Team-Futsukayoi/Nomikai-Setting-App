@@ -90,7 +90,7 @@ export const SignIn = () => {
 
   return (
     <Box sx={authStyles.gradientBackground}>
-      <Container maxWidth="sm">
+      <Container maxWidth="xs">
         <Stack spacing={4} sx={{ width: '100%', alignItems: 'center' }}>
           <Box sx={authStyles.formContainer}>
             <Typography variant="h4" sx={authStyles.gradientText}>
@@ -169,6 +169,8 @@ export const SignIn = () => {
         open={open}
         message={successMessage}
         handleClose={handleClose}
+        bottomOffset="10px"
+        autoHideDuration={3000}
       />
     </Box>
   );
