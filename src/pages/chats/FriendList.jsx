@@ -1,6 +1,6 @@
+// FriendList.jsx
 import React from 'react';
 import {
-  Button,
   Box,
   Typography,
   List,
@@ -8,49 +8,85 @@ import {
   ListItemAvatar,
   ListItemText,
   Avatar,
+  IconButton,
+  Divider,
 } from '@mui/material';
+import ChatBubbleOutline from '@mui/icons-material/ChatBubbleOutline';
+import { StyledPaper, StyledButton } from '../../styles/chatlistpageStyles';
 
-export const FriendPage = ({ friendList }) => {
+export const FriendList = ({ friendList }) => {
   return (
-    <Box sx={{ maxWidth: 600, margin: 'auto' }}>
-      {/* フレンドリストのタイトル */}
-      <Typography variant="h5" gutterBottom>
-        フレンドリスト
-      </Typography>
-
-      {/* フレンドリストの表示 */}
-      <List>
-        {friendList.map(({ id, name, iconUrl, isGroop }) => {
-          // グループでない場合のみ表示
-          if (!isGroop) {
-            return (
-              <ListItem key={id} alignItems="flex-start" sx={{ mb: 2 }}>
-                {/* フレンドのアイコン */}
-                <ListItemAvatar>
-                  <Avatar alt={name} src={iconUrl} />
-                </ListItemAvatar>
-                {/* フレンドの名前とチャット開始ボタン */}
-                <ListItemText
-                  primary={name}
-                  secondary={
-                    <Button
+    <StyledPaper>
+      <Box sx={{ p: 2 }}>
+        <Typography
+          variant="h6"
+          sx={{
+            mb: 3,
+            fontWeight: 600,
+            color: 'primary.dark',
+          }}
+        >
+          フレンドリスト
+        </Typography>
+        <List sx={{ width: '100%' }}>
+          {friendList.map(({ id, name, iconUrl, isGroop }) => {
+            if (!isGroop) {
+              return (
+                <React.Fragment key={id}>
+                  <ListItem
+                    alignItems="center"
+                    sx={{
+                      borderRadius: 2,
+                      mb: 1,
+                      '&:hover': {
+                        bgcolor: 'rgba(255, 215, 0, 0.08)',
+                      },
+                    }}
+                  >
+                    <ListItemAvatar>
+                      <Avatar
+                        alt={name}
+                        src={iconUrl}
+                        sx={{
+                          width: 50,
+                          height: 50,
+                          border: 2,
+                          borderColor: 'primary.light',
+                        }}
+                      />
+                    </ListItemAvatar>
+                    <ListItemText
+                      primary={
+                        <Typography
+                          variant="subtitle1"
+                          sx={{ fontWeight: 500 }}
+                        >
+                          {name}
+                        </Typography>
+                      }
+                    />
+                    <StyledButton
                       variant="outlined"
-                      size="small"
+                      startIcon={<ChatBubbleOutline />}
                       onClick={() => console.log('ChatListへの遷移')}
-                      sx={{ mt: 1 }}
+                      sx={{
+                        minWidth: 140,
+                        borderRadius: 20,
+                      }}
                     >
-                      チャットを開始
-                    </Button>
-                  }
-                />
-              </ListItem>
-            );
-          }
-          return null;
-        })}
-      </List>
-    </Box>
+                      チャット開始
+                    </StyledButton>
+                  </ListItem>
+                  <Divider variant="inset" component="li" />
+                </React.Fragment>
+              );
+            }
+            return null;
+          })}
+        </List>
+      </Box>
+    </StyledPaper>
   );
 };
 
-export default FriendPage;
+export default FriendList;

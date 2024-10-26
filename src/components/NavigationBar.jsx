@@ -16,7 +16,7 @@ const NavigationBar = () => {
   useEffect(() => {
     const path = location.pathname;
     if (path.includes('/home')) setValue(0);
-    else if (path.includes('/chat')) setValue(1);
+    else if (path.includes('/chatlist')) setValue(1);
     else if (path.includes('/events')) setValue(2);
     else if (path.includes('/profile')) setValue(3);
   }, [location]);
