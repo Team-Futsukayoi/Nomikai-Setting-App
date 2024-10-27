@@ -1,4 +1,4 @@
-function createEvent() {
+export function createEvent() {
     const eventname = setEventName();
     const storeInfo = setStoreInfo();
     const date = setDate();
