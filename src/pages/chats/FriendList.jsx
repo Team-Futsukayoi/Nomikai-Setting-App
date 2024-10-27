@@ -60,7 +60,7 @@ export const FriendList = ({ friendList }) => {
                         variant="subtitle1"
                         sx={{ fontWeight: 500 }}
                       >
-                        {username || `ID: ${userId}`}
+                        {username || `No Name (ID: ${userId})`}
                       </Typography>
                     }
                   />

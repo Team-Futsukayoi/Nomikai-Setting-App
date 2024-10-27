@@ -1,9 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams } from 'react-router-dom';
 import { db } from '../../firebaseConfig';
 import { collection, query, where, orderBy, onSnapshot, addDoc, serverTimestamp, doc, getDoc } from 'firebase/firestore';
-import { Box, Typography, TextField, Button, Avatar } from '@mui/material';
+import { Box, Typography, TextField, Button, Avatar, Paper, Container, ThemeProvider } from '@mui/material';
+import SendIcon from '@mui/icons-material/Send';
 import { useAuth } from '../../hooks/useAuth';
+import theme from '../../styles/theme';  // 先ほど作成したテーマをインポート
 
 function ChatPage() {
   const [messages, setMessages] = useState([]);
@@ -11,6 +13,7 @@ function ChatPage() {
   const { friendId } = useParams();
   const { currentUser } = useAuth();
   const [friendInfo, setFriendInfo] = useState(null);
+  const messagesEndRef = useRef(null);
 
   useEffect(() => {
     if (currentUser && friendId) {
@@ -50,6 +53,10 @@ function ChatPage() {
     }
   }, [currentUser, friendId]);
 
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages]);
+
   const sendMessage = async (e) => {
     e.preventDefault();
     if (newMessage.trim() === '') return;
@@ -69,48 +76,59 @@ function ChatPage() {
   };
 
   return (
-    <Box sx={{ maxWidth: 600, margin: 'auto', p: 2 }}>
-      <Typography variant="h4" sx={{ mb: 2 }}>
-        {friendInfo ? friendInfo.username : 'チャット'}
-      </Typography>
-      <Box sx={{ height: 400, overflowY: 'auto', mb: 2, p: 2, bgcolor: 'background.paper' }}>
-        {messages.map((message) => (
-          <Box
-            key={message.id}
-            sx={{
-              display: 'flex',
-              justifyContent: message.userId === currentUser.uid ? 'flex-end' : 'flex-start',
-              mb: 1,
-            }}
-          >
-            <Box
-              sx={{
-                bgcolor: message.userId === currentUser.uid ? 'primary.main' : 'grey.300',
-                color: message.userId === currentUser.uid ? 'white' : 'black',
-                p: 1,
-                borderRadius: 1,
-                maxWidth: '70%',
-              }}
-            >
-              <Typography>{message.text}</Typography>
+    <ThemeProvider theme={theme}>
+      <Box sx={{ bgcolor: 'background.default', minHeight: '100vh', py: 3 }}>
+        <Container maxWidth="sm">
+          <Paper elevation={3} sx={{ p: 2, bgcolor: 'background.paper' }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+              <Avatar src={friendInfo?.icon} alt={friendInfo?.username} sx={{ mr: 2 }} />
+              <Typography variant="h5" sx={{ color: 'primary.main', fontWeight: 'bold' }}>
+                {friendInfo ? friendInfo.username : 'チャット'}
+              </Typography>
             </Box>
-          </Box>
-        ))}
+            <Box sx={{ height: '60vh', overflowY: 'auto', mb: 2, p: 2 }}>
+              {messages.map((message) => (
+                <Box
+                  key={message.id}
+                  sx={{
+                    display: 'flex',
+                    justifyContent: message.userId === currentUser.uid ? 'flex-end' : 'flex-start',
+                    mb: 1,
+                  }}
+                >
+                  <Paper
+                    elevation={1}
+                    sx={{
+                      p: 1,
+                      maxWidth: '70%',
+                      bgcolor: message.userId === currentUser.uid ? 'primary.light' : 'background.paper',
+                      color: message.userId === currentUser.uid ? 'text.primary' : 'text.secondary',
+                      borderRadius: message.userId === currentUser.uid ? '20px 20px 0 20px' : '20px 20px 20px 0',
+                    }}
+                  >
+                    <Typography variant="body1">{message.text}</Typography>
+                  </Paper>
+                </Box>
+              ))}
+              <div ref={messagesEndRef} />
+            </Box>
+            <Box component="form" onSubmit={sendMessage} sx={{ display: 'flex' }}>
+              <TextField
+                fullWidth
+                value={newMessage}
+                onChange={(e) => setNewMessage(e.target.value)}
+                placeholder="メッセージを入力"
+                variant="outlined"
+                sx={{ mr: 1 }}
+              />
+              <Button type="submit" variant="contained" endIcon={<SendIcon />}>
+                送信
+              </Button>
+            </Box>
+          </Paper>
+        </Container>
       </Box>
-      <form onSubmit={sendMessage} style={{ display: 'flex' }}>
-        <TextField
-          fullWidth
-          value={newMessage}
-          onChange={(e) => setNewMessage(e.target.value)}
-          placeholder="メッセージを入力"
-          variant="outlined"
-          sx={{ mr: 1 }}
-        />
-        <Button type="submit" variant="contained">
-          送信
-        </Button>
-      </form>
-    </Box>
+    </ThemeProvider>
   );
 }
 
