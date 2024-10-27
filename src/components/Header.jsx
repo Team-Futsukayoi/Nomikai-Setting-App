@@ -17,13 +17,16 @@ import ChatIcon from '@mui/icons-material/Chat';
 import EventIcon from '@mui/icons-material/Event';
 import PersonIcon from '@mui/icons-material/Person';
 import LogoutIcon from '@mui/icons-material/Logout';
-import { useState } from 'react';
+import { useState,useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { signOut } from 'firebase/auth';
 import { auth } from '../firebaseConfig';
+import { onAuthStateChanged } from 'firebase/auth'; // これを追加
 import headerStyles from '../styles/headerStyles';
 
+
 const Header = () => {
+  const [user, setUser] = useState(null);
   const [open, setOpen] = useState(false);
   const navigate = useNavigate();
 
@@ -64,6 +67,18 @@ const Header = () => {
       onClick: () => navigate('/profile'),
     },
   ];
+
+  // Firebaseの認証状態を監視
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      setUser(user); // ユーザー情報を更新
+      if (!user) {
+        navigate('/signin'); // ユーザーがログインしていない場合はサインインページにリダイレクト
+      }
+    });
+
+    return () => unsubscribe();
+  }, [navigate]);
 
   return (
     <>
@@ -112,6 +127,11 @@ const Header = () => {
             <Typography variant="h6" sx={{ fontWeight: 600 }}>
               メニュー
             </Typography>
+            {user && (
+              <Typography variant="body1" sx={{ padding: '16px', color: '#000' }}>
+                ログインしています: {user.email}
+              </Typography>
+            )}
           </Box>
 
           <List sx={{ mt: 2 }}>
