@@ -28,7 +28,7 @@ export const FriendList = ({ friendList }) => {
         >
           フレンドリスト
         </Typography>
-        <List sx={{ width: '100%' }}>
+        <List sx={{ width: '100%', maxHeight: '300px', overflowY: 'auto' }}> {/* maxHeightとoverflowYを追加 */}
           {friendList && friendList.length > 0 ? (
             friendList.map(({ id, username, userId, icon }) => (
               <React.Fragment key={id}>
@@ -79,7 +79,7 @@ export const FriendList = ({ friendList }) => {
                 </ListItem>
                 <Divider variant="inset" component="li" />
               </React.Fragment>
-            ))
+             ))
           ) : (
             <Typography>フレンドがいません</Typography>
           )}

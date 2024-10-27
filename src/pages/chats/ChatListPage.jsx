@@ -23,7 +23,8 @@ import {
   getDoc,
   query,
   where,
-  serverTimestamp
+  serverTimestamp,
+  limit
 } from 'firebase/firestore';
 import FriendList from './FriendList';
 import GroupList from './GroupList';
@@ -141,59 +142,72 @@ export const ChatListPage = () => {
     }
   };
 
-// Firestoreからフレンドリストを取得する関数
-const fetchFriendsFromFirestore = async (userId) => {
-  try {
-    console.log("Fetching friends for userId:", userId);
-    const friendsQuery = query(
-      collection(db, 'friends'),
-      where('userId', '==', userId)
-    );
-    const querySnapshot = await getDocs(friendsQuery);
-    console.log("Friends query snapshot:", querySnapshot.docs.map(doc => doc.data()));
-    const friendPromises = querySnapshot.docs.map(async (document) => {
-      const friendId = document.data().friendId;
-      console.log("Processing friendId:", friendId);
-      const friendDocRef = doc(db, 'users', friendId);
-      const friendDocSnap = await getDoc(friendDocRef);
-      if (friendDocSnap.exists()) {
-        const friendData = friendDocSnap.data();
-        console.log("Friend data:", friendData);
-        return {
-          id: friendId,
-          username: friendData.username,
-          icon: friendData.icon,
-          userId: friendData.userId
-        };
-      } else {
-        console.log("フレンドのドキュメントが見つかりません:", friendId);
-        return null;
+  const fetchFriendsFromFirestore = async (userId) => {
+    try {
+      console.log("Fetching friends for userId:", userId);
+      const friendsQuery = query(
+        collection(db, 'friends'),
+        where('userId', '==', userId)
+      );
+      const querySnapshot = await getDocs(friendsQuery);
+      console.log("Friends query snapshot size:", querySnapshot.size);
+      console.log("Friends query snapshot docs:", querySnapshot.docs.map(doc => doc.data()));
+  
+      if (querySnapshot.empty) {
+        console.log("No friends found for this user");
+        return [];
       }
-    });
-    const friends = await Promise.all(friendPromises);
-    const filteredFriends = friends.filter(friend => friend !== null);
-    console.log("Filtered friends:", filteredFriends);
-    return filteredFriends;
-  } catch (error) {
-    console.error('フレンドリストの取得に失敗しました:', error);
-    return [];
-  }
-};
+  
+      const friendIds = querySnapshot.docs.map(doc => doc.data().friendId);
+      console.log("Friend IDs:", friendIds);
+  
+      const friendsData = await Promise.all(
+        friendIds.map(async (friendId) => {
+          console.log("Fetching data for friendId:", friendId);
+          const friendDocRef = doc(db, 'users', friendId);
+          const friendDocSnap = await getDoc(friendDocRef);
+          if (friendDocSnap.exists()) {
+            const friendData = friendDocSnap.data();
+            console.log("Friend data for", friendId, ":", friendData);
+            return {
+              id: friendId,
+              username: friendData.username,
+              icon: friendData.icon,
+              userId: friendData.userId
+            };
+          } else {
+            console.log("Friend document does not exist for friendId:", friendId);
+            return null;
+          }
+        })
+      );
+  
+      const filteredFriends = friendsData.filter(friend => friend !== null);
+      console.log("Filtered friends:", filteredFriends);
+      return filteredFriends;
+    } catch (error) {
+      console.error('フレンドリストの取得に失敗しました:', error);
+      return [];
+    }
+  };
 
-// useEffect内でのフレンドリスト取得
 useEffect(() => {
   const unsubscribe = auth.onAuthStateChanged(async (user) => {
     if (user) {
+      console.log("User authenticated:", user.uid);
       const userDoc = await getDoc(doc(db, 'users', user.uid));
       if (userDoc.exists()) {
         const userData = userDoc.data();
+        console.log("User data:", userData);
         setUserInfo(userData);
-        // ユーザー固有のフレンドリストを取得
         const friendList = await fetchFriendsFromFirestore(user.uid);
-        console.log("Fetched friend list:", friendList);
+        console.log("Fetched friend list in useEffect:", friendList);
         setIsFriendList(friendList);
+      } else {
+        console.log("User document does not exist");
       }
     } else {
+      console.log("User not authenticated, navigating to signin");
       navigate('/signin');
     }
   });
@@ -294,7 +308,11 @@ useEffect(() => {
 
             {/* リスト表示 */}
             <StyledPaper>
-              {isFriendClicked && <FriendList friendList={isFriendList} />}
+              {isFriendClicked && (
+                <Box sx={{ maxHeight: '400px', overflowY: 'auto' }}> {/* maxHeightとoverflowYを追加 */}
+        <FriendList friendList={isFriendList} />
+    </Box>
+  )}
               {isGroupClicked && <GroupList friendList={isFriendList} />}
             </StyledPaper>
           </Box>
