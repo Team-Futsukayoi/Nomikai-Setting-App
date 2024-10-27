@@ -1,4 +1,3 @@
-// FriendList.jsx
 import React from 'react';
 import {
   Box,
@@ -8,11 +7,11 @@ import {
   ListItemAvatar,
   ListItemText,
   Avatar,
-  IconButton,
   Divider,
 } from '@mui/material';
 import ChatBubbleOutline from '@mui/icons-material/ChatBubbleOutline';
 import { StyledPaper, StyledButton } from '../../styles/chatlistpageStyles';
+import { Link } from 'react-router-dom';
 
 export const FriendList = ({ friendList }) => {
   return (
@@ -65,17 +64,18 @@ export const FriendList = ({ friendList }) => {
                         </Typography>
                       }
                     />
-                    <StyledButton
-                      variant="outlined"
-                      startIcon={<ChatBubbleOutline />}
-                      onClick={() => console.log('ChatListへの遷移')}
-                      sx={{
-                        minWidth: 140,
-                        borderRadius: 20,
-                      }}
-                    >
-                      チャット開始
-                    </StyledButton>
+                    <Link to={`/chat/${id}`} style={{ textDecoration: 'none' }}>
+                      <StyledButton
+                        variant="outlined"
+                        startIcon={<ChatBubbleOutline />}
+                        sx={{
+                          minWidth: 140,
+                          borderRadius: 20,
+                        }}
+                      >
+                        チャット開始
+                      </StyledButton>
+                    </Link>
                   </ListItem>
                   <Divider variant="inset" component="li" />
                 </React.Fragment>
