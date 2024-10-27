@@ -23,7 +23,7 @@ import CakeIcon from '@mui/icons-material/Cake';
 import LocalBarIcon from '@mui/icons-material/LocalBar';
 import SportsBarIcon from '@mui/icons-material/SportsBar';
 import LiquorIcon from '@mui/icons-material/Liquor';
-import styles from '../../styles/userAttributesPageStyles';
+import styles from '../../styles/userattributepagestyle';
 
 const UserAttributesPage = () => {
   const [gender, setGender] = useState('');
