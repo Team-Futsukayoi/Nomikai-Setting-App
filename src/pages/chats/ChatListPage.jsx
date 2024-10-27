@@ -54,33 +54,22 @@ export const ChatListPage = () => {
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged(async (user) => {
       if (user) {
-        // ユーザーが認証されている場合、Firestoreからユーザー情報を取得
-        const userDoc = await getDoc(doc(db, 'users', user.uid));
-        if (userDoc.exists()) {
-          setUserInfo(userDoc.data());
-        }
-      } else {
-        // ユーザーが認証されていない場合、ログインページにリダイレクト
-        navigate('/signin');
-      }
-    });
-
-    return () => unsubscribe();
-  }, [navigate]);
-
-
-  useEffect(() => {
-    const unsubscribe = auth.onAuthStateChanged(async (user) => {
-      if (user) {
+        console.log("User authenticated:", user.uid);
         const userDoc = await getDoc(doc(db, 'users', user.uid));
         if (userDoc.exists()) {
           const userData = userDoc.data();
+          console.log("User data:", userData);
           setUserInfo(userData);
-          // ユーザー固有のフレンドリストを取得
+  
+          // フレンドリストを取得
           const friendList = await fetchFriendsFromFirestore(userData.userId);
+          console.log("Fetched friend list:", friendList);
           setIsFriendList(friendList);
+        } else {
+          console.log("User document does not exist");
         }
       } else {
+        console.log("User not authenticated, navigating to signin");
         navigate('/signin');
       }
     });
@@ -191,29 +180,6 @@ export const ChatListPage = () => {
     }
   };
 
-useEffect(() => {
-  const unsubscribe = auth.onAuthStateChanged(async (user) => {
-    if (user) {
-      console.log("User authenticated:", user.uid);
-      const userDoc = await getDoc(doc(db, 'users', user.uid));
-      if (userDoc.exists()) {
-        const userData = userDoc.data();
-        console.log("User data:", userData);
-        setUserInfo(userData);
-        const friendList = await fetchFriendsFromFirestore(user.uid);
-        console.log("Fetched friend list in useEffect:", friendList);
-        setIsFriendList(friendList);
-      } else {
-        console.log("User document does not exist");
-      }
-    } else {
-      console.log("User not authenticated, navigating to signin");
-      navigate('/signin');
-    }
-  });
-
-  return () => unsubscribe();
-}, [navigate]);
 
 
   if (!userInfo) {
@@ -285,7 +251,7 @@ useEffect(() => {
               <Grid container spacing={2} alignItems="center">
                 <Grid item xs={9}>
                   <StyledTextField
-                    label="フレンドのユーザーIDを入力"
+                    label="ユーザーIDを入力"
                     value={friendName}
                     onChange={(e) => setFriendName(e.target.value)}
                     fullWidth
