@@ -23,6 +23,8 @@ import {
   getDoc,
   query,
   where,
+  serverTimestamp,
+  limit
 } from 'firebase/firestore';
 import FriendList from './FriendList';
 import GroupList from './GroupList';
@@ -66,30 +68,10 @@ export const ChatListPage = () => {
     return () => unsubscribe();
   }, [navigate]);
 
-  // Firestoreからフレンドリストを取得する関数
-  const fetchFriendsFromFirestore = async (userId) => {
-    try {
-      const friendsQuery = query(
-        collection(db, 'friends'),
-        where('addedBy', '==', userId)
-      );
-      const querySnapshot = await getDocs(friendsQuery);
-      const friends = querySnapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      }));
-      return friends;
-    } catch (error) {
-      console.error('フレンドリストの取得に失敗しました:', error);
-      return [];
-    }
-  };
 
-  // ユーザー情報とフレンドリストを取得
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged(async (user) => {
       if (user) {
-        // ユーザーが認証されている場合、Firestoreからユーザー情報を取得
         const userDoc = await getDoc(doc(db, 'users', user.uid));
         if (userDoc.exists()) {
           const userData = userDoc.data();
@@ -99,23 +81,57 @@ export const ChatListPage = () => {
           setIsFriendList(friendList);
         }
       } else {
-        // ユーザーが認証されていない場合、ログインページにリダイレクト
         navigate('/signin');
       }
     });
-
+  
     return () => unsubscribe();
   }, [navigate]);
 
-  // フレンド追加処理
   const handleAddFriend = async () => {
-    if (friendName.trim() && userInfo) {
+    if (friendName.trim() && currentUser) {
       try {
-        const docRef = await addDoc(collection(db, 'friends'), {
-          name: friendName,
-          addedBy: currentUser?.username,
+        // ユーザーIDでユーザーを検索
+        const usersRef = collection(db, 'users');
+        const q = query(usersRef, where('userId', '==', friendName));
+        const querySnapshot = await getDocs(q);
+  
+        if (querySnapshot.empty) {
+          alert('ユーザーが見つかりません');
+          return;
+        }
+  
+        const friendUser = querySnapshot.docs[0];
+        const friendId = friendUser.id;
+  
+        // 自分自身をフレンドに追加しようとしていないか確認
+        if (friendId === currentUser.uid) {
+          alert('自分自身をフレンドに追加することはできません');
+          return;
+        }
+  
+        // すでにフレンドかどうか確認
+        const friendsRef = collection(db, 'friends');
+        const friendCheckQuery = query(
+          friendsRef,
+          where('userId', '==', currentUser.uid),
+          where('friendId', '==', friendId)
+        );
+        const friendCheckSnapshot = await getDocs(friendCheckQuery);
+  
+        if (!friendCheckSnapshot.empty) {
+          alert('すでにフレンドです');
+          return;
+        }
+  
+        // フレンドを追加
+        await addDoc(collection(db, 'friends'), {
+          userId: userInfo.userId,
+          friendId: friendId,
+          createdAt: serverTimestamp()
         });
-        console.log('フレンドを追加しました。ID:', docRef.id);
+  
+        console.log('フレンドを追加しました。');
         setFriendName('');
         // 更新されたフレンドリストを再取得
         const updatedFriends = await fetchFriendsFromFirestore(userInfo.userId);
@@ -125,6 +141,80 @@ export const ChatListPage = () => {
       }
     }
   };
+
+  const fetchFriendsFromFirestore = async (userId) => {
+    try {
+      console.log("Fetching friends for userId:", userId);
+      const friendsQuery = query(
+        collection(db, 'friends'),
+        where('userId', '==', userId)
+      );
+      const querySnapshot = await getDocs(friendsQuery);
+      console.log("Friends query snapshot size:", querySnapshot.size);
+      console.log("Friends query snapshot docs:", querySnapshot.docs.map(doc => doc.data()));
+  
+      if (querySnapshot.empty) {
+        console.log("No friends found for this user");
+        return [];
+      }
+  
+      const friendIds = querySnapshot.docs.map(doc => doc.data().friendId);
+      console.log("Friend IDs:", friendIds);
+  
+      const friendsData = await Promise.all(
+        friendIds.map(async (friendId) => {
+          console.log("Fetching data for friendId:", friendId);
+          const friendDocRef = doc(db, 'users', friendId);
+          const friendDocSnap = await getDoc(friendDocRef);
+          if (friendDocSnap.exists()) {
+            const friendData = friendDocSnap.data();
+            console.log("Friend data for", friendId, ":", friendData);
+            return {
+              id: friendId,
+              username: friendData.username,
+              icon: friendData.icon,
+              userId: friendData.userId
+            };
+          } else {
+            console.log("Friend document does not exist for friendId:", friendId);
+            return null;
+          }
+        })
+      );
+  
+      const filteredFriends = friendsData.filter(friend => friend !== null);
+      console.log("Filtered friends:", filteredFriends);
+      return filteredFriends;
+    } catch (error) {
+      console.error('フレンドリストの取得に失敗しました:', error);
+      return [];
+    }
+  };
+
+useEffect(() => {
+  const unsubscribe = auth.onAuthStateChanged(async (user) => {
+    if (user) {
+      console.log("User authenticated:", user.uid);
+      const userDoc = await getDoc(doc(db, 'users', user.uid));
+      if (userDoc.exists()) {
+        const userData = userDoc.data();
+        console.log("User data:", userData);
+        setUserInfo(userData);
+        const friendList = await fetchFriendsFromFirestore(user.uid);
+        console.log("Fetched friend list in useEffect:", friendList);
+        setIsFriendList(friendList);
+      } else {
+        console.log("User document does not exist");
+      }
+    } else {
+      console.log("User not authenticated, navigating to signin");
+      navigate('/signin');
+    }
+  });
+
+  return () => unsubscribe();
+}, [navigate]);
+
 
   if (!userInfo) {
     return <div>Loading...</div>;
@@ -195,7 +285,7 @@ export const ChatListPage = () => {
               <Grid container spacing={2} alignItems="center">
                 <Grid item xs={9}>
                   <StyledTextField
-                    label="フレンド名を入力"
+                    label="フレンドのユーザーIDを入力"
                     value={friendName}
                     onChange={(e) => setFriendName(e.target.value)}
                     fullWidth
@@ -218,7 +308,11 @@ export const ChatListPage = () => {
 
             {/* リスト表示 */}
             <StyledPaper>
-              {isFriendClicked && <FriendList friendList={isFriendList} />}
+              {isFriendClicked && (
+                <Box sx={{ maxHeight: '400px', overflowY: 'auto' }}> {/* maxHeightとoverflowYを追加 */}
+        <FriendList friendList={isFriendList} />
+    </Box>
+  )}
               {isGroupClicked && <GroupList friendList={isFriendList} />}
             </StyledPaper>
           </Box>
