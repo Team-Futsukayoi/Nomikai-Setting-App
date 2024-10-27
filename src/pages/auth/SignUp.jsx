@@ -56,6 +56,7 @@ export const SignUp = () => {
         email: user.email,
         userId: userId,
         createdAt: new Date(),
+        isProfileComplete: false,
       });
 
       await setDoc(doc(db, 'userIds', userId), { uid: user.uid });

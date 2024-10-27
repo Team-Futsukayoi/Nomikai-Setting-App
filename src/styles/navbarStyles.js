@@ -30,12 +30,12 @@ const navbarStyles = {
   },
   selectedButton: {
     position: 'absolute',
-    top: '-20px',
+    top: '-30px',
     left: '50%',
     transform: 'translateX(-50%)',
     backgroundColor: '#FFD700',
-    width: '56px',
-    height: '56px',
+    width: '60px',
+    height: '60px',
     '&:hover': {
       backgroundColor: '#FFD700',
     },
