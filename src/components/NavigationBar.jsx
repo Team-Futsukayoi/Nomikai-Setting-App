@@ -1,10 +1,11 @@
-import { BottomNavigation, BottomNavigationAction, Box } from '@mui/material';
+import { Box, IconButton, Fab } from '@mui/material';
 import HomeRoundedIcon from '@mui/icons-material/HomeRounded';
 import ChatRoundedIcon from '@mui/icons-material/ChatRounded';
 import AccountCircleRoundedIcon from '@mui/icons-material/AccountCircleRounded';
 import EventRoundedIcon from '@mui/icons-material/EventRounded';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import navbarStyles from '../styles/navbarStyles';
 
 const NavigationBar = () => {
@@ -28,26 +29,47 @@ const NavigationBar = () => {
     { label: 'プロフィール', icon: AccountCircleRoundedIcon, path: '/profile' },
   ];
 
+  const CurrentIcon = navigationItems[value].icon;
+
   return (
     <Box sx={navbarStyles.container}>
-      <BottomNavigation
-        value={value}
-        onChange={(event, newValue) => {
-          setValue(newValue);
-          navigate(navigationItems[newValue].path);
-        }}
-        showLabels
-        sx={navbarStyles.navigation}
-      >
-        {navigationItems.map((item) => (
-          <BottomNavigationAction
+      <Box sx={navbarStyles.navigation}>
+        {navigationItems.map((item, index) => (
+          <IconButton
             key={item.label}
-            label={item.label}
-            icon={<item.icon sx={navbarStyles.icon} />}
-            sx={navbarStyles.actionButton}
-          />
+            onClick={() => {
+              setValue(index);
+              navigate(item.path);
+            }}
+            sx={navbarStyles.iconButton}
+          >
+            <item.icon
+              sx={{
+                ...navbarStyles.icon,
+                color: value === index ? '#DAA520' : '#B8860B',
+              }}
+            />
+          </IconButton>
         ))}
-      </BottomNavigation>
+        <Fab sx={navbarStyles.selectedButton}>
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={value}
+              initial={{ rotate: -180, opacity: 0 }}
+              animate={{ rotate: 0, opacity: 1 }}
+              exit={{ rotate: 180, opacity: 0 }}
+              transition={{ duration: 0.3 }}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              <CurrentIcon sx={{ color: '#FFFFFF', fontSize: 28 }} />
+            </motion.div>
+          </AnimatePresence>
+        </Fab>
+      </Box>
     </Box>
   );
 };
