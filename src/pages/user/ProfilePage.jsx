@@ -13,92 +13,34 @@ import {
   IconButton,
   Fade,
   Alert,
+  Select,
+  MenuItem,
+  FormControl,
+  InputLabel,
 } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
 import CheckIcon from '@mui/icons-material/Check';
 import CloseIcon from '@mui/icons-material/Close';
+import CakeIcon from '@mui/icons-material/Cake';
+import WcIcon from '@mui/icons-material/Wc';
+import LocalBarIcon from '@mui/icons-material/LocalBar';
+import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { useAuth } from '../../hooks/useAuth';
+import dayjs from 'dayjs';
+import { profileStyles } from '../../styles/profileStyles';
 
-const profileStyles = {
-  container: {
-    mt: 4,
-    mb: 8,
-  },
-  profileCard: {
-    borderRadius: '20px',
-    padding: '2rem',
-    background: 'rgba(255, 255, 255, 0.95)',
-    backdropFilter: 'blur(10px)',
-    boxShadow: '0 8px 32px rgba(255, 215, 0, 0.1)',
-  },
-  avatarWrapper: {
-    position: 'relative',
-    margin: '0 auto',
-    width: 120,
-    height: 120,
-    '&::after': {
-      content: '""',
-      position: 'absolute',
-      top: -3,
-      left: -3,
-      right: -3,
-      bottom: -3,
-      background: 'linear-gradient(45deg, #FFD700, #FFA500)',
-      borderRadius: '50%',
-      zIndex: 0,
-    },
-  },
-  avatar: {
-    width: 120,
-    height: 120,
-    border: '4px solid white',
-    position: 'relative',
-    zIndex: 1,
-    transition: 'transform 0.3s ease',
-    '&:hover': {
-      transform: 'scale(1.05)',
-    },
-  },
-  editButton: {
-    position: 'absolute',
-    right: -10,
-    bottom: -10,
-    backgroundColor: '#FFD700',
-    color: '#000',
-    '&:hover': {
-      backgroundColor: '#FFA500',
-    },
-    zIndex: 2,
-  },
-  textField: {
-    '& .MuiOutlinedInput-root': {
-      borderRadius: '12px',
-      backgroundColor: 'rgba(255, 255, 255, 0.9)',
-      '&:hover fieldset': {
-        borderColor: '#FFD700',
-      },
-      '&.Mui-focused fieldset': {
-        borderColor: '#FFA500',
-      },
-    },
-  },
-  actionButton: {
-    borderRadius: '12px',
-    padding: '10px 24px',
-    textTransform: 'none',
-    fontSize: '1rem',
-    fontWeight: 600,
-    transition: 'all 0.3s ease',
-  },
-  saveButton: {
-    background: 'linear-gradient(45deg, #FFD700, #FFA500)',
-    color: '#000',
-    '&:hover': {
-      transform: 'translateY(-2px)',
-      boxShadow: '0 4px 12px rgba(255, 215, 0, 0.3)',
-    },
-  },
-};
+const alcoholStrengthOptions = [
+  { value: 'strong', label: '強い', icon: '🍺' },
+  { value: 'medium', label: '普通', icon: '🍷' },
+  { value: 'weak', label: '弱い', icon: '🥂' },
+  { value: 'none', label: '飲まない', icon: '🚫' },
+];
+
+const genderOptions = [
+  { value: 'male', label: '男性', icon: '👨' },
+  { value: 'female', label: '女性', icon: '👩' },
+  { value: 'other', label: 'その他', icon: '🧑' },
+];
 
 const ProfilePage = () => {
   const { currentUser } = useAuth();
@@ -107,6 +49,9 @@ const ProfilePage = () => {
   const [error, setError] = useState(null);
   const [editMode, setEditMode] = useState(false);
   const [username, setUsername] = useState('');
+  const [gender, setGender] = useState('');
+  const [birthDate, setBirthDate] = useState(null);
+  const [alcoholStrength, setAlcoholStrength] = useState('');
   const [updateSuccess, setUpdateSuccess] = useState(false);
 
   useEffect(() => {
@@ -117,8 +62,10 @@ const ProfilePage = () => {
           if (userDoc.exists()) {
             const userData = userDoc.data();
             setUser(userData);
-            setUsername(userData.username || '');
-            console.log('User ID:', userData.userId);
+            setUsername(userData.username || currentUser.displayName || '');
+            setGender(userData.gender || '');
+            setBirthDate(userData.birthDate ? dayjs(userData.birthDate) : null);
+            setAlcoholStrength(userData.alcoholStrength || '');
           } else {
             setError('ユーザーデータが見つかりません');
           }
@@ -137,10 +84,17 @@ const ProfilePage = () => {
   const handleUpdate = async () => {
     if (currentUser && username.trim()) {
       try {
-        await updateDoc(doc(db, 'users', currentUser.uid), {
+        const updateData = {
           username,
-        });
-        setUser((prev) => ({ ...prev, username }));
+          gender,
+          birthDate: birthDate ? birthDate.toISOString() : null,
+          alcoholStrength,
+          updatedAt: new Date().toISOString(),
+          isProfileComplete: true,
+        };
+
+        await updateDoc(doc(db, 'users', currentUser.uid), updateData);
+        setUser((prev) => ({ ...prev, ...updateData }));
         setEditMode(false);
         setUpdateSuccess(true);
         setTimeout(() => setUpdateSuccess(false), 3000);
@@ -151,22 +105,30 @@ const ProfilePage = () => {
     }
   };
 
+  const InfoCard = ({ icon: Icon, label, value }) => (
+    <Box sx={profileStyles.infoCard}>
+      <Icon sx={profileStyles.infoIcon} />
+      <Typography variant="body1" sx={{ fontWeight: 500 }}>
+        {label}:
+      </Typography>
+      <Typography sx={{ ml: 1 }}>{value}</Typography>
+    </Box>
+  );
+
   if (loading) {
     return (
       <Container maxWidth="sm" sx={profileStyles.container}>
         <Paper sx={profileStyles.profileCard}>
-          <Box
-            sx={{
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              gap: 2,
-            }}
-          >
-            <Skeleton variant="circular" width={120} height={120} />
-            <Skeleton variant="text" width={200} height={40} />
-            <Skeleton variant="text" width={150} height={30} />
-            <Skeleton variant="text" width={250} height={25} />
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+            <Skeleton
+              variant="circular"
+              width={120}
+              height={120}
+              sx={{ mx: 'auto' }}
+            />
+            <Skeleton variant="rectangular" height={60} />
+            <Skeleton variant="rectangular" height={60} />
+            <Skeleton variant="rectangular" height={60} />
           </Box>
         </Paper>
       </Container>
@@ -191,10 +153,10 @@ const ProfilePage = () => {
             sx={{
               display: 'flex',
               flexDirection: 'column',
-              alignItems: 'center',
               gap: 3,
             }}
           >
+            {/* Avatar section */}
             <Box sx={profileStyles.avatarWrapper}>
               <Avatar
                 src={user.avatarUrl}
@@ -211,48 +173,129 @@ const ProfilePage = () => {
             </Box>
 
             {editMode ? (
-              <TextField
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                label="ユーザー名"
-                fullWidth
-                sx={profileStyles.textField}
-                autoFocus
-                InputLabelProps={{
-                  style: { color: '#FFB347' },
-                }}
-              />
-            ) : (
-              <Typography variant="h4" sx={{ fontWeight: 600 }}>
-                {user.userId}
-              </Typography>
-            )}
-
-            <Typography
-              variant="body1"
-              sx={{
-                color: 'text.secondary',
-                background: 'rgba(255, 215, 0, 0.1)',
-                padding: '8px 16px',
-                borderRadius: '20px',
-                fontWeight: 500,
-              }}
-            >
-              {user.email}
-            </Typography>
-
-            {editMode && (
-              <Button
-                variant="contained"
-                onClick={handleUpdate}
+              <Box
                 sx={{
-                  ...profileStyles.actionButton,
-                  ...profileStyles.saveButton,
+                  width: '100%',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: 2,
                 }}
-                startIcon={<CheckIcon />}
               >
-                保存する
-              </Button>
+                <TextField
+                  label="ユーザー名"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  fullWidth
+                  sx={profileStyles.textField}
+                />
+
+                <FormControl sx={profileStyles.formControl}>
+                  <InputLabel>性別</InputLabel>
+                  <Select
+                    value={gender}
+                    onChange={(e) => setGender(e.target.value)}
+                    label="性別"
+                  >
+                    {genderOptions.map((option) => (
+                      <MenuItem key={option.value} value={option.value}>
+                        <Box
+                          sx={{ display: 'flex', alignItems: 'center', gap: 1 }}
+                        >
+                          <span>{option.icon}</span>
+                          {option.label}
+                        </Box>
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+
+                <DatePicker
+                  label="生年月日"
+                  value={birthDate}
+                  onChange={(newValue) => setBirthDate(newValue)}
+                  sx={profileStyles.datePickerStyle}
+                  slotProps={{
+                    textField: {
+                      fullWidth: true,
+                    },
+                  }}
+                />
+
+                <FormControl sx={profileStyles.formControl}>
+                  <InputLabel>お酒の強さ</InputLabel>
+                  <Select
+                    value={alcoholStrength}
+                    onChange={(e) => setAlcoholStrength(e.target.value)}
+                    label="お酒の強さ"
+                  >
+                    {alcoholStrengthOptions.map((option) => (
+                      <MenuItem key={option.value} value={option.value}>
+                        <Box
+                          sx={{ display: 'flex', alignItems: 'center', gap: 1 }}
+                        >
+                          <span>{option.icon}</span>
+                          {option.label}
+                        </Box>
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+
+                <Button
+                  variant="contained"
+                  onClick={handleUpdate}
+                  sx={{
+                    ...profileStyles.actionButton,
+                    ...profileStyles.saveButton,
+                  }}
+                  startIcon={<CheckIcon />}
+                >
+                  保存する
+                </Button>
+              </Box>
+            ) : (
+              <Box sx={{ width: '100%' }}>
+                <Typography
+                  variant="h4"
+                  sx={{
+                    fontWeight: 600,
+                    textAlign: 'center',
+                    mb: 3,
+                    background: 'linear-gradient(45deg, #FFD700, #FFA500)',
+                    WebkitBackgroundClip: 'text',
+                    WebkitTextFillColor: 'transparent',
+                  }}
+                >
+                  {user.username}
+                </Typography>
+
+                <InfoCard
+                  icon={WcIcon}
+                  label="性別"
+                  value={
+                    genderOptions.find((opt) => opt.value === user.gender)
+                      ?.label || '未設定'
+                  }
+                />
+
+                <InfoCard
+                  icon={CakeIcon}
+                  label="生年月日"
+                  value={
+                    birthDate ? birthDate.format('YYYY年MM月DD日') : '未設定'
+                  }
+                />
+
+                <InfoCard
+                  icon={LocalBarIcon}
+                  label="お酒の強さ"
+                  value={
+                    alcoholStrengthOptions.find(
+                      (opt) => opt.value === user.alcoholStrength
+                    )?.label || '未設定'
+                  }
+                />
+              </Box>
             )}
 
             {updateSuccess && (
