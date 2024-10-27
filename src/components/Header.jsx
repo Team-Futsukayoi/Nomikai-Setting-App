@@ -80,7 +80,7 @@ const Header = () => {
                 WebkitTextFillColor: 'transparent',
               }}
             >
-              飲み会セッティング
+              のみっと！🍻
             </Typography>
           </Box>
           <IconButton
