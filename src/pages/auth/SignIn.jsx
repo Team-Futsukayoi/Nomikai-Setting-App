@@ -56,7 +56,10 @@ export const SignIn = () => {
       const userDoc = await getDoc(doc(db, 'users', user.uid));
       if (userDoc.exists()) {
         const userData = userDoc.data();
-        console.log('User ID:', userData.userId);
+        if (!userData.isProfileComplete) {
+          navigate('/user-attributes');
+          return;
+        }
       }
 
       setError('');
