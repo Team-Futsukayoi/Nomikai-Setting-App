@@ -94,7 +94,7 @@ export const SignIn = () => {
         <Stack spacing={4} sx={{ width: '100%', alignItems: 'center' }}>
           <Box sx={authStyles.formContainer}>
             <Typography variant="h4" sx={authStyles.gradientText}>
-              かんぱい！🍻
+              のみっと！🍻
             </Typography>
             <Typography variant="body4" sx={{ mb: 4, color: 'text.secondary' }}>
               サインインして仲間と乾杯しましょう！

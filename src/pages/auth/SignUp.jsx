@@ -98,7 +98,7 @@ export const SignUp = () => {
         <Stack spacing={4} sx={{ width: '100%', alignItems: 'center' }}>
           <Box sx={authStyles.formContainer}>
             <Typography variant="h4" sx={authStyles.gradientText}>
-              ようこそ！🍻
+              のみっと！へようこそ🍻
             </Typography>
             <Typography variant="body4" sx={{ mb: 4, color: 'text.secondary' }}>
               アカウントを作成して仲間と乾杯しましょう！
