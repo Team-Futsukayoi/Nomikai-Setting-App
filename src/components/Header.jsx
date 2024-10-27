@@ -48,7 +48,11 @@ const Header = () => {
 
   const menuItems = [
     { text: 'ホーム', icon: <HomeIcon />, onClick: () => navigate('/home') },
-    { text: 'チャット', icon: <ChatIcon />, onClick: () => navigate('/chat') },
+    {
+      text: 'チャット',
+      icon: <ChatIcon />,
+      onClick: () => navigate('/chatlist'),
+    },
     {
       text: 'イベント',
       icon: <EventIcon />,
