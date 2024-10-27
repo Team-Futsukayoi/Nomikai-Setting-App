@@ -8,6 +8,7 @@ import Header from './components/Header';
 import NavigationBar from './components/NavigationBar';
 import { useLocation } from 'react-router-dom';
 import ProfilePage from './pages/user/ProfilePage';
+import HomePage from './pages/home/HomePage';
 import UserAttributesPage from './pages/user/UserAttributesPage';
 import { LocalizationProvider } from '@mui/x-date-pickers';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
@@ -30,6 +31,7 @@ function App() {
           <Route path="/signup" element={<SignUp />} />
           <Route path="/signin" element={<SignIn />} />
           <Route path="/profile" element={<ProfilePage />} />
+          <Route path="/home" element={<HomePage />} />
           <Route path="/success" element={<SuccessPage />} />
           <Route path="/chatlist" element={<ChatListPage />} />
           <Route path="/chat/:friendId" element={<ChatPage />} />
