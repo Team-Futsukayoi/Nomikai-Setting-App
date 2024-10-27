@@ -25,13 +25,13 @@ function ChatPage() {
   }, []);
 
   return (
-    <div>
+    <div className="chat-page">
       <div className="msgs">
         {messages.map(({ id, text, photoURL, uid }) => (
           <div key={id}>
             <div className={`msg ${uid === 'user1' ? 'sent' : 'received'}`}>
-              <img src={photoURL} alt="" />
-              <p>{text}</p>
+              <img className="user-icon" src={photoURL} alt="" />
+              <p className="text-message">{text}</p>
             </div>
           </div>
         ))}

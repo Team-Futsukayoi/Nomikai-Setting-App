@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { db } from '../../firebaseConfig';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import SendIcon from '@mui/icons-material/Send';
+import { Input } from '@mui/material';
 
 const SendMessage = () => {
   const [message, setMessage] = useState('');
@@ -24,18 +26,27 @@ const SendMessage = () => {
 
   return (
     <form onSubmit={sendMessage}>
-      <input
-        value={message}
-        onChange={(e) => setMessage(e.target.value)}
-        placeholder="メッセージを入力"
-      />
-      <button type="submit" style={{ 
-        backgroundColor: 'blue', 
-        color: 'white', 
-        padding: '10px 20px', 
-        borderRadius: '20px', 
-        cursor: 'pointer' 
-      }}>送信</button>
+      <div className="sendMsg">
+        <Input
+          value={message}
+          onChange={(e) => setMessage(e.target.value)}
+          placeholder="メッセージを入力"
+          style={{
+            width: '78%',
+            fontSize: '15px',
+            fontWeight: '550',
+            marginLeft: '5px',
+            marginBottom: '-3px',
+          }}
+        />
+        <SendIcon
+          type="submit"
+          style={{
+            color: '#7AC2FF',
+            marginLeft: '20px',
+          }}
+        />
+      </div>
     </form>
   );
 };
