@@ -98,10 +98,10 @@ export const SignUp = () => {
       <Container maxWidth={isSmallScreen ? 'xs' : 'sm'}>
         <Stack spacing={4} sx={{ width: '100%', alignItems: 'center' }}>
           <Box sx={authStyles.formContainer}>
-            <Typography variant="h4" sx={authStyles.gradientText}>
+            <Typography variant="h5" sx={authStyles.gradientText}>
               のみっと！へようこそ🍻
             </Typography>
-            <Typography variant="body4" sx={{ mb: 4, color: 'text.secondary' }}>
+            <Typography variant="body5" sx={{ mb: 4, color: 'text.secondary' }}>
               アカウントを作成して仲間と乾杯しましょう！
             </Typography>
 
