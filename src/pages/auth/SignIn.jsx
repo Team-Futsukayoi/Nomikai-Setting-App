@@ -63,7 +63,7 @@ export const SignIn = () => {
       }
 
       setError('');
-      navigate('/success');
+      navigate('/home');
     } catch (error) {
       // Translate error message to Jap
       switch (error.code) {
