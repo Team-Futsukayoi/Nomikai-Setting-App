@@ -74,7 +74,7 @@ const HomePage = () => {
           <Box display="flex" alignItems="center" mb={2}>
             <LocalBar sx={{ fontSize: 40, color: '#7B341E' }} />
             <Typography
-              variant="h3"
+              variant="h4"
               component="h3"
               sx={{
                 fontWeight: 'bold',
