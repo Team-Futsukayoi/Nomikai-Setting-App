@@ -1,4 +1,3 @@
-// UserAttributesPage.jsx
 import React, { useState } from 'react';
 import {
   Container,
@@ -54,7 +53,7 @@ const UserAttributesPage = () => {
         };
 
         await setDoc(doc(db, 'users', user.uid), userData, { merge: true });
-        navigate('/success');
+        navigate('/home');
       }
     } catch (error) {
       console.error('プロフィールの保存に失敗しました:', error);
