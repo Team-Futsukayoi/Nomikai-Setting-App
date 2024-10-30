@@ -15,6 +15,7 @@ import { LocalizationProvider } from '@mui/x-date-pickers';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import dayjs from 'dayjs';
 import 'dayjs/locale/ja';
+import { useEffect } from 'react';
 
 // 日本語ロケールを設定
 dayjs.locale('ja');
@@ -22,6 +23,10 @@ dayjs.locale('ja');
 function App() {
   const location = useLocation();
   const hideNavBarPaths = ['/', '/signin', '/signup', '/user-attributes'];
+
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [location]);
 
   return (
     <>
