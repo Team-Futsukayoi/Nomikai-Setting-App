@@ -123,7 +123,16 @@ const Header = () => {
                   item.onClick();
                   setOpen(false);
                 }}
-                sx={headerStyles.listItem}
+                sx={{
+                  ...headerStyles.listItem,
+                  transition:
+                    'background-color 0.3s ease-in-out, transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out', // アニメーションの追加
+                  '&:hover': {
+                    backgroundColor: '#f5f5f5', // ホバー時の背景色
+                    transform: 'scale(1.05)', // ホバー時の拡大
+                    boxShadow: '0 4px 20px rgba(0, 0, 0, 0.1)', // ホバー時の影
+                  },
+                }}
               >
                 <ListItemIcon sx={headerStyles.listItemIcon}>
                   {item.icon}
