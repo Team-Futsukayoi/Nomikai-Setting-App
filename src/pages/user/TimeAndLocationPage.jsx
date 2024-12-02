@@ -489,7 +489,7 @@ const TimeAndLocationPage = () => {
                 />
                 <Box>
                   <Typography variant="h6" sx={styles.sectionTitle}>
-                    希望エリア
+                    希望のエリア
                   </Typography>
                   <Typography
                     variant="caption"
@@ -540,10 +540,10 @@ const TimeAndLocationPage = () => {
                         </Box>
                       )}
                     >
-                      {preferredLocations.map((placeId) => (
-                        <MenuItem key={placeId} value={placeId}>
-                          {areaDetails.get(placeId) || placeId}
-                        </MenuItem>
+                      {nearbyAreas.map((area) => (
+                        <StyledMenuItem key={area.value} value={area.value}>
+                          {area.label}
+                        </StyledMenuItem>
                       ))}
                     </StyledSelect>
                   </FormControl>
