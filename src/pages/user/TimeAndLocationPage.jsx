@@ -19,7 +19,7 @@ import LocationOnIcon from '@mui/icons-material/LocationOn';
 import { db, auth } from '../../firebaseConfig';
 import { doc, updateDoc } from 'firebase/firestore';
 import styles from '../../styles/userAttributesPageStyles';
-import { timeSlots, areas } from '../../consts/constants';
+import { timeSlots } from '../../consts/constants';
 import { styled } from '@mui/material/styles';
 import { alpha } from '@mui/material/styles';
 import { getDistance } from 'geolib';
