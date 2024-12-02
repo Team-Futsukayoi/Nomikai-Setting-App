@@ -14,11 +14,12 @@ export const useAuth = () => {
           // Firestoreから追加のユーザー情報を取得
           const userDoc = await getDoc(doc(db, 'users', user.uid));
           if (userDoc.exists()) {
+            const userData = userDoc.data();
             setCurrentUser({
               uid: user.uid,
               email: user.email,
-              username: userDoc.data().userId, // userIdをusernameとして使用
-              // avatarUrl: userDoc.data().avatarUrl, // 必要に応じて他のフィールドも追加
+              username: userData.username || userData.userId, // usernameがない場合はuserIdを使用
+              userId: userData.userId,
             });
           }
         } catch (error) {
