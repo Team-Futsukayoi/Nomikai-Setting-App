@@ -214,7 +214,7 @@ const UserAttributesPage = () => {
                 sx={styles.submitButton}
                 endIcon={<LocalBarIcon />}
               >
-                プロフィールを保存
+                次へ
               </Button>
             </motion.div>
           </form>
