@@ -53,7 +53,9 @@ const UserAttributesPage = () => {
         };
 
         await setDoc(doc(db, 'users', user.uid), userData, { merge: true });
-        navigate('/home');
+        navigate('/time-and-location', {
+          state: { animation: 'slide-left' },
+        });
       }
     } catch (error) {
       console.error('プロフィールの保存に失敗しました:', error);
@@ -212,7 +214,7 @@ const UserAttributesPage = () => {
                 sx={styles.submitButton}
                 endIcon={<LocalBarIcon />}
               >
-                プロフィールを保存
+                次へ
               </Button>
             </motion.div>
           </form>
