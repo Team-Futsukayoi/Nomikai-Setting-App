@@ -11,6 +11,7 @@ import ProfilePage from './pages/user/ProfilePage';
 import HomePage from './pages/home/HomePage';
 import EventsPage from './pages/events/EventsPage';
 import UserAttributesPage from './pages/user/UserAttributesPage';
+import TimeAndLocationPage from './pages/user/TimeAndLocationPage';
 import { LocalizationProvider } from '@mui/x-date-pickers';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import dayjs from 'dayjs';
@@ -22,7 +23,13 @@ dayjs.locale('ja');
 
 function App() {
   const location = useLocation();
-  const hideNavBarPaths = ['/', '/signin', '/signup', '/user-attributes'];
+  const hideNavBarPaths = [
+    '/',
+    '/signin',
+    '/signup',
+    '/user-attributes',
+    '/time-and-location',
+  ];
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -43,6 +50,7 @@ function App() {
           <Route path="/chatlist" element={<ChatListPage />} />
           <Route path="/chat/:friendId" element={<ChatPage />} />
           <Route path="/user-attributes" element={<UserAttributesPage />} />
+          <Route path="/time-and-location" element={<TimeAndLocationPage />} />
         </Routes>
         {!hideNavBarPaths.includes(location.pathname) && <NavigationBar />}
       </LocalizationProvider>
