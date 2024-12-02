@@ -31,7 +31,7 @@ import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { useAuth } from '../../hooks/useAuth';
 import dayjs from 'dayjs';
 import { profileStyles } from '../../styles/profileStyles';
-import { timeSlots, areas } from '../../consts/constants';
+import { timeSlots } from '../../consts/constants';
 import { styled } from '@mui/material/styles';
 import { alpha } from '@mui/material/styles';
 import { Loader } from '@googlemaps/js-api-loader';
