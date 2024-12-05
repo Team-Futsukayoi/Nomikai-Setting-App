@@ -10,11 +10,13 @@ import {
   Alert
 } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
-import { collection, query, where, getDocs } from 'firebase/firestore';
+import { collection, query, where, getDocs, addDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../../firebaseConfig';
 import { StyledPaper, StyledTextField, StyledButton } from '../../styles/chatlistpageStyles';
+import { useAuth } from '../../hooks/useAuth';
 
 const GroupForm = () => {
+  const { currentUser } = useAuth();
   const navigate = useNavigate();
   const [groupName, setGroupName] = useState('');
   const [memberId, setMemberId] = useState('');
@@ -79,6 +81,56 @@ const GroupForm = () => {
 
   const handleCloseSnackbar = () => {
     setSnackbar({ ...snackbar, open: false });
+  };
+
+  const handleCreateGroup = async () => {
+    try {
+      if (!groupName.trim() || members.length === 0) return;
+
+      // グループデータの作成
+      const newGroup = {
+        name: groupName.trim(),
+        createdBy: currentUser.uid,
+        createdAt: serverTimestamp(),
+        members: [
+          {
+            uid: currentUser.uid,
+            userId: currentUser.userId || 'unknown',
+            username: currentUser.username || 'unknown',
+            role: 'admin'
+          },
+          ...members.map(member => ({
+            uid: member.uid,
+            userId: member.userId || 'unknown',
+            username: member.username || 'unknown',
+            role: 'member'
+          }))
+        ],
+        updatedAt: serverTimestamp()
+      };
+
+      // Firestoreにグループを追加
+      const docRef = await addDoc(collection(db, 'groups'), newGroup);
+
+      setSnackbar({
+        open: true,
+        message: 'グループを作成しました',
+        severity: 'success'
+      });
+
+      // 少し待ってからリダイレクト
+      setTimeout(() => {
+        navigate('/chatlist');
+      }, 1500);
+
+    } catch (error) {
+      console.error('グループ作成エラー:', error);
+      setSnackbar({
+        open: true,
+        message: 'グループの作成に失敗しました',
+        severity: 'error'
+      });
+    }
   };
 
   return (
