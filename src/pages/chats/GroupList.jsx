@@ -11,107 +11,113 @@ import {
   AvatarGroup,
   Chip,
 } from '@mui/material';
-import GroupAdd from '@mui/icons-material/GroupAdd';
+import ChatBubbleOutline from '@mui/icons-material/ChatBubbleOutline';
 import { StyledPaper, StyledButton } from '../../styles/chatlistpageStyles';
+import { Link } from 'react-router-dom';
 
-const GroupList = ({ friendList }) => {
+const GroupList = ({ groupList }) => {
+  const groups = groupList || [];
+  
   return (
-    <StyledPaper>
-      <Box sx={{ p: 2 }}>
-        <Typography
-          variant="h6"
-          sx={{
-            mb: 3,
-            fontWeight: 600,
-            color: 'primary.dark',
-          }}
-        >
-          グループリスト
-        </Typography>
+    <List sx={{ width: '100%', maxHeight: '300px', overflowY: 'auto' }}>
+      {groups.length > 0 ? (
+        groups.map((group) => (
+          <React.Fragment key={group.id}>
+            <ListItem
+              sx={{
+                width: '100%',
+                borderRadius: 2,
+                mb: 1,
+                padding: '8px',
+                '&:hover': {
+                  bgcolor: 'rgba(255, 215, 0, 0.08)',
+                },
+              }}
+            >
+              <Box
+                sx={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  width: '100%',
+                  gap: 1,
+                }}
+              >
+                <AvatarGroup max={3} sx={{ mr: 2 }}>
+                  {group.members.map((member, index) => (
+                    <Avatar
+                      key={member.uid}
+                      alt={member.username}
+                      sx={{
+                        width: 36,
+                        height: 36,
+                        border: 2,
+                        borderColor: 'primary.light',
+                      }}
+                    />
+                  ))}
+                </AvatarGroup>
 
-        <List sx={{ width: '100%' }}>
-          {friendList.map(({ id, name, iconUrl, isGroop, members }) => {
-            if (isGroop) {
-              return (
-                <ListItem
-                  key={id}
+                <Box
                   sx={{
-                    borderRadius: 2,
-                    mb: 2,
-                    bgcolor: 'background.paper',
-                    boxShadow: '0 2px 8px rgba(255, 215, 0, 0.1)',
-                    '&:hover': {
-                      bgcolor: 'rgba(255, 215, 0, 0.08)',
-                    },
+                    flex: 1,
+                    minWidth: 0,
+                    overflow: 'hidden',
                   }}
                 >
-                  <ListItemAvatar>
-                    <AvatarGroup max={3} sx={{ mr: 2 }}>
-                      <Avatar
-                        alt={name}
-                        src={iconUrl}
-                        sx={{
-                          width: 45,
-                          height: 45,
-                          border: 2,
-                          borderColor: 'primary.light',
-                        }}
-                      />
-                      {/* グループメンバーのアバターを表示（オプション） */}
-                    </AvatarGroup>
-                  </ListItemAvatar>
-                  <ListItemText
-                    primary={
-                      <Box
-                        sx={{ display: 'flex', alignItems: 'center', gap: 1 }}
-                      >
-                        <Typography
-                          variant="subtitle1"
-                          sx={{ fontWeight: 500 }}
-                        >
-                          {name}
-                        </Typography>
-                        <Chip
-                          label="グループ"
-                          size="small"
-                          sx={{
-                            bgcolor: 'primary.light',
-                            color: 'primary.dark',
-                          }}
-                        />
-                      </Box>
-                    }
-                    secondary={
-                      <Typography
-                        variant="body2"
-                        color="text.secondary"
-                        sx={{ mt: 0.5 }}
-                      >
-                        {members
-                          ? `${members.length}人のメンバー`
-                          : '0人のメンバー'}
-                      </Typography>
-                    }
-                  />
-                  <StyledButton
-                    variant="contained"
-                    startIcon={<GroupAdd />}
-                    onClick={() => console.log('グループチャットへの遷移')}
+                  <Typography
+                    variant="subtitle1"
                     sx={{
-                      minWidth: 140,
-                      borderRadius: 20,
+                      fontWeight: 500,
+                      fontSize: '0.85rem',
+                      lineHeight: 1.2,
+                      whiteSpace: 'nowrap',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
                     }}
                   >
-                    参加する
+                    {group.name}
+                  </Typography>
+                  <Typography
+                    variant="body2"
+                    sx={{
+                      color: 'text.secondary',
+                      fontSize: '0.75rem',
+                      lineHeight: 1.2,
+                    }}
+                  >
+                    {group.members.length}人のメンバー
+                  </Typography>
+                </Box>
+
+                <Link
+                  to={`/chat/group/${group.id}`}
+                  style={{
+                    textDecoration: 'none',
+                    flexShrink: 0,
+                    marginLeft: '4px',
+                  }}
+                >
+                  <StyledButton
+                    variant="outlined"
+                    sx={{
+                      minWidth: '32px',
+                      width: '36px',
+                      height: '36px',
+                      padding: '6px',
+                      borderRadius: '50%',
+                    }}
+                  >
+                    <ChatBubbleOutline sx={{ fontSize: '1rem' }} />
                   </StyledButton>
-                </ListItem>
-              );
-            }
-            return null;
-          })}
-        </List>
-      </Box>
-    </StyledPaper>
+                </Link>
+              </Box>
+            </ListItem>
+          </React.Fragment>
+        ))
+      ) : (
+        <Typography>グループがありません</Typography>
+      )}
+    </List>
   );
 };
 

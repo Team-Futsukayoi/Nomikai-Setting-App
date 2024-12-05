@@ -14,7 +14,7 @@ import { StyledPaper, StyledButton } from '../../styles/chatlistpageStyles';
 import { Link } from 'react-router-dom';
 
 export const FriendList = ({ friendList }) => {
-  console.log('FriendList component received:', friendList);
+  // console.log('FriendList component received:', friendList);
   return (
     <StyledPaper>
       <Typography

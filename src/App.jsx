@@ -17,6 +17,7 @@ import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import dayjs from 'dayjs';
 import 'dayjs/locale/ja';
 import { useEffect } from 'react';
+import CreateGroupPage from './pages/groups/CreateGroupPage';
 
 // 日本語ロケールを設定
 dayjs.locale('ja');
@@ -51,6 +52,7 @@ function App() {
           <Route path="/chat/:friendId" element={<ChatPage />} />
           <Route path="/user-attributes" element={<UserAttributesPage />} />
           <Route path="/time-and-location" element={<TimeAndLocationPage />} />
+          <Route path="/groups/create" element={<CreateGroupPage />} />
         </Routes>
         {!hideNavBarPaths.includes(location.pathname) && <NavigationBar />}
       </LocalizationProvider>
