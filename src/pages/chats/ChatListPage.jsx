@@ -13,6 +13,7 @@ import {
 import PersonAdd from '@mui/icons-material/PersonAdd';
 import Groups from '@mui/icons-material/Groups';
 import People from '@mui/icons-material/People';
+import GroupAdd from '@mui/icons-material/GroupAdd';
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { auth, db } from '../../firebaseConfig';
@@ -96,7 +97,7 @@ export const ChatListPage = () => {
 
         // 自分自身をフレンドに追加しようとしていないか確認
         if (friendId === currentUser.uid) {
-          alert('自分自身をフレンドに追加することはできません');
+          alert('自分自身を���レンドに追加することはできません');
           return;
         }
 
@@ -299,7 +300,19 @@ export const ChatListPage = () => {
                   <FriendList friendList={isFriendList} />
                 </Box>
               )}
-              {isGroupClicked && <GroupList friendList={isFriendList} />}
+              {isGroupClicked && (
+                <>
+                  <StyledButton
+                    variant="contained"
+                    onClick={() => navigate('/groups/create')}
+                    startIcon={<GroupAdd />}
+                    sx={{ mb: 2 }}
+                  >
+                    新しいグループを作成
+                  </StyledButton>
+                  <GroupList friendList={isFriendList} />
+                </>
+              )}
             </StyledPaper>
           </Box>
         </Container>
