@@ -1,58 +1,100 @@
 import React, { useState } from 'react';
-import { TextField, Button, Box, Paper } from '@mui/material';
-import { styled } from '@mui/material/styles';
-import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
-import { db } from '../../firebaseConfig';
-import { useAuth } from '../../hooks/useAuth';
-
-const StyledPaper = styled(Paper)(({ theme }) => ({
-  padding: theme.spacing(3),
-  margin: theme.spacing(2),
-}));
+import { 
+  TextField, 
+  Button, 
+  Box, 
+  Chip,
+  Stack,
+  Typography 
+} from '@mui/material';
+import { useNavigate } from 'react-router-dom';
+import { StyledPaper, StyledTextField, StyledButton } from '../../styles/chatlistpageStyles';
 
 const GroupForm = () => {
-  const { currentUser } = useAuth();
+  const navigate = useNavigate();
   const [groupName, setGroupName] = useState('');
-  const [selectedMembers, setSelectedMembers] = useState([]);
+  const [memberId, setMemberId] = useState('');
+  const [members, setMembers] = useState([]);
+
+  const handleAddMember = () => {
+    if (memberId.trim() && !members.includes(memberId.trim())) {
+      setMembers([...members, memberId.trim()]);
+      setMemberId('');
+    }
+  };
+
+  const handleRemoveMember = (memberToRemove) => {
+    setMembers(members.filter(member => member !== memberToRemove));
+  };
 
   const handleCreateGroup = async () => {
     try {
-      const newGroup = {
-        name: groupName,
-        createdBy: currentUser.uid,
-        createdAt: serverTimestamp(),
-        members: [{
-          uid: currentUser.uid,
-          role: 'admin'
-        }]
-      };
-
-      await addDoc(collection(db, 'groups'), newGroup);
-      setGroupName('');
-      // 成功時の処理（例：通知やリダイレクト）
+      // グループ作成処理
+      // 成功したらグループ一覧にリダイレクト
+      navigate('/chatlist');
     } catch (error) {
       console.error('グループ作成エラー:', error);
-      // エラー時の処理
     }
   };
 
   return (
     <StyledPaper>
-      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+      <Stack spacing={3}>
         <TextField
           label="グループ名"
           value={groupName}
           onChange={(e) => setGroupName(e.target.value)}
           fullWidth
         />
-        <Button 
-          variant="contained" 
+        
+        <Box>
+          <TextField
+            label="メンバーのユーザーID"
+            value={memberId}
+            onChange={(e) => setMemberId(e.target.value)}
+            fullWidth
+            onKeyPress={(e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault();
+                handleAddMember();
+              }
+            }}
+          />
+          <Button 
+            onClick={handleAddMember}
+            variant="outlined"
+            sx={{ mt: 1 }}
+          >
+            メンバーを追加
+          </Button>
+        </Box>
+
+        {members.length > 0 && (
+          <Box>
+            <Typography variant="subtitle1" gutterBottom>
+              追加されたメンバー:
+            </Typography>
+            <Stack direction="row" spacing={1} flexWrap="wrap">
+              {members.map((member) => (
+                <Chip
+                  key={member}
+                  label={member}
+                  onDelete={() => handleRemoveMember(member)}
+                  sx={{ m: 0.5 }}
+                />
+              ))}
+            </Stack>
+          </Box>
+        )}
+
+        <StyledButton 
+          variant="contained"
           onClick={handleCreateGroup}
-          disabled={!groupName.trim()}
+          disabled={!groupName.trim() || members.length === 0}
         >
           グループを作成
-        </Button>
-      </Box>
+        </StyledButton>
+      </Stack>
     </StyledPaper>
   );
 };
