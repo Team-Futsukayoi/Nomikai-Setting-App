@@ -56,7 +56,7 @@ const GroupList = ({ groupList }) => {
                 <AvatarGroup max={3} sx={{ mr: 2 }}>
                   {group.members.map((member, index) => (
                     <Avatar
-                      key={member.uid}
+                      key={`${group.id}_${member.uid}_${index}`}
                       alt={member.username}
                       sx={{
                         width: 36,
@@ -124,12 +124,11 @@ const GroupList = ({ groupList }) => {
               </Box>
             </ListItem>
           </React.Fragment>
-        ))
-      ) : (
-        <Typography>グループがありません</Typography>
-      )}
-    </List>
-  );
+          ))
+        ) : (
+          <Typography>グループがありません</Typography>
+        )}
+      </List>
     </StyledPaper>
   );
 };
