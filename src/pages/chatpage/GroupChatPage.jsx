@@ -33,44 +33,50 @@ import { ja } from 'date-fns/locale';
 function GroupChatPage() {
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState('');
-  const { groupId } = useParams(); // URLからgroupIdを取得
+  const { groupId } = useParams();
   const { currentUser } = useAuth();
   const [groupInfo, setGroupInfo] = useState(null);
   const messagesEndRef = useRef(null);
 
-  // グループ情報の取得
+  // グループ情報とメッセージの取得
   useEffect(() => {
-    if (currentUser && groupId) {
-      const groupRef = doc(db, 'groups', groupId);
-      getDoc(groupRef)
-        .then((docSnap) => {
-          if (docSnap.exists()) {
-            setGroupInfo(docSnap.data());
-          } else {
-            console.error('グループが見つかりません');
-          }
-        })
-        .catch((error) => {
-          console.error('グループ情報の取得エラー:', error);
-        });
+    if (!currentUser || !groupId) return;
 
-      // グループメッセージを取得
-      const q = query(
-        collection(db, 'groupMessages'),
-        where('groupId', '==', groupId),
-        orderBy('createdAt', 'asc')
-      );
+    // グループ情報を取得
+    const fetchGroupInfo = async () => {
+      try {
+        const groupRef = doc(db, 'groups', groupId);
+        const groupSnap = await getDoc(groupRef);
+        if (groupSnap.exists()) {
+          setGroupInfo(groupSnap.data());
+        } else {
+          console.error('グループが見つかりません');
+        }
+      } catch (error) {
+        console.error('グループ情報の取得エラー:', error);
+      }
+    };
 
-      const unsubscribe = onSnapshot(q, (querySnapshot) => {
-        const fetchedMessages = querySnapshot.docs.map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
-        }));
-        setMessages(fetchedMessages);
-      });
+    fetchGroupInfo();
 
-      return () => unsubscribe();
-    }
+    // グループメッセージを取得
+    const q = query(
+      collection(db, 'groupMessages'),
+      where('groupId', '==', groupId),
+      orderBy('createdAt', 'asc')
+    );
+
+    const unsubscribe = onSnapshot(q, (querySnapshot) => {
+      const fetchedMessages = querySnapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
+      setMessages(fetchedMessages);
+    }, (error) => {
+      console.error('メッセージ取得エラー:', error);
+    });
+
+    return () => unsubscribe();
   }, [currentUser, groupId]);
 
   // 自動スクロール
@@ -80,20 +86,20 @@ function GroupChatPage() {
     }
   }, [messages]);
 
-  // メッセージ送信
   const sendMessage = async (e) => {
     e.preventDefault();
     if (newMessage.trim() === '') return;
 
     try {
-      await addDoc(collection(db, 'groupMessages'), {
+      const messageData = {
         text: newMessage,
         createdAt: serverTimestamp(),
         userId: currentUser.uid,
-        username: currentUser.username, // 送信者の名前を保存
-        groupId: groupId,
-      });
+        username: currentUser.username || 'unknown',
+        groupId: groupId
+      };
 
+      await addDoc(collection(db, 'groupMessages'), messageData);
       setNewMessage('');
     } catch (error) {
       console.error('メッセージ送信エラー:', error);
