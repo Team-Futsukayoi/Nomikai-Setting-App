@@ -150,7 +150,7 @@ export const ChatListPage = () => {
           return;
         }
 
-        // フレンドを追加（双方���）
+        // フレンドを追加（双方向）
         await Promise.all([
           // 自分 -> 相手
           addDoc(collection(db, 'friends'), {
