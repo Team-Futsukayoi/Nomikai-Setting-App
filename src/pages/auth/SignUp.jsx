@@ -109,6 +109,7 @@ export const SignUp = () => {
 
             <form onSubmit={handleSubmit}>
               <Stack spacing={3}>
+                
                 <TextField
                   label="ユーザー名（表示名）"
                   type="text"
