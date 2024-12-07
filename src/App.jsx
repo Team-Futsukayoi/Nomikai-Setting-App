@@ -18,6 +18,7 @@ import dayjs from 'dayjs';
 import 'dayjs/locale/ja';
 import { useEffect } from 'react';
 import CreateGroupPage from './pages/groups/CreateGroupPage';
+import GroupChatPage from './pages/chatpage/GroupChatPage';
 
 // 日本語ロケールを設定
 dayjs.locale('ja');
@@ -53,6 +54,7 @@ function App() {
           <Route path="/user-attributes" element={<UserAttributesPage />} />
           <Route path="/time-and-location" element={<TimeAndLocationPage />} />
           <Route path="/groups/create" element={<CreateGroupPage />} />
+          <Route path="/chat/group/:groupId" element={<GroupChatPage />} />
         </Routes>
         {!hideNavBarPaths.includes(location.pathname) && <NavigationBar />}
       </LocalizationProvider>
