@@ -9,17 +9,7 @@
     "start": "node server.js",
     "server": "nodemon server.js",
     "lint": "eslint src --ext js,jsx --report-unused-disable-directives --max-warnings 0",
-    "format": "prettier --write 'src/**/*.{js,jsx,css,md,json}'",
-    "prepare": "husky install"
-  },
-  "lint-staged": {
-    "src/**/*.{js,jsx}": [
-      "prettier --write",
-      "eslint --fix"
-    ],
-    "src/**/*.{css,md,json,html}": [
-      "prettier --write"
-    ]
+    "format": "prettier --write 'src/**/*.{js,jsx,css,md,json}'"
   },
   "dependencies": {
     "@emotion/react": "^11.13.3",
@@ -52,7 +42,6 @@
     "eslint-plugin-react-hooks": "^5.0.0",
     "eslint-plugin-react-refresh": "^0.4.13",
     "globals": "^15.11.0",
-    "husky": "^9.1.6",
     "lint-staged": "^15.2.10",
     "nodemon": "^3.1.7",
     "prettier": "^3.3.3",

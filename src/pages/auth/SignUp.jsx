@@ -131,7 +131,7 @@ export const SignUp = () => {
                   helperText="他のユーザーがあなたを見つけるために使用されます"
                 />
                 <TextField
-                  label="メールアドレス"
+                  label="ユールアドレス"
                   type="email"
                   fullWidth
                   required
