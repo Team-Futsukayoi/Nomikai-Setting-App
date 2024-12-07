@@ -1,59 +1,211 @@
 import React, { useState } from 'react';
+import { 
+  TextField, 
+  Button, 
+  Box, 
+  Chip,
+  Stack,
+  Typography,
+  Snackbar,
+  Alert
+} from '@mui/material';
+import { useNavigate } from 'react-router-dom';
+import { collection, query, where, getDocs, addDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../../firebaseConfig';
-import { collection, addDoc } from 'firebase/firestore';
+import { StyledPaper } from '../../styles/chatlistpageStyles';
 import { useAuth } from '../../hooks/useAuth';
-import { Box, TextField, Button, Typography } from '@mui/material';
 
 function CreateGroupPage() {
-  const [groupName, setGroupName] = useState('');
   const { currentUser } = useAuth();
+  const navigate = useNavigate();
+  const [groupName, setGroupName] = useState('');
+  const [memberId, setMemberId] = useState('');
+  const [members, setMembers] = useState([]);
+  const [snackbar, setSnackbar] = useState({
+    open: false,
+    message: '',
+    severity: 'error'
+  });
+
+  const checkUserExists = async (userId) => {
+    try {
+      const usersRef = collection(db, 'users');
+      const q = query(usersRef, where('userId', '==', userId));
+      const querySnapshot = await getDocs(q);
+      
+      if (!querySnapshot.empty) {
+        const userData = querySnapshot.docs[0].data();
+        return {
+          exists: true,
+          username: userData.username,
+          uid: querySnapshot.docs[0].id
+        };
+      }
+      return { exists: false };
+    } catch (error) {
+      console.error('ユーザー確認エラー:', error);
+      return { exists: false, error };
+    }
+  };
+
+  const handleAddMember = async () => {
+    if (memberId.trim() && !members.some(m => m.userId === memberId.trim())) {
+      const userCheck = await checkUserExists(memberId.trim());
+      
+      if (userCheck.exists) {
+        setMembers([...members, {
+          userId: memberId.trim(),
+          username: userCheck.username,
+          uid: userCheck.uid
+        }]);
+        setMemberId('');
+        setSnackbar({
+          open: true,
+          message: 'メンバーを追加しました',
+          severity: 'success'
+        });
+      } else {
+        setSnackbar({
+          open: true,
+          message: 'ユーザーが存在しません',
+          severity: 'error'
+        });
+      }
+    }
+  };
+
+  const handleRemoveMember = (memberToRemove) => {
+    setMembers(members.filter(member => member.userId !== memberToRemove.userId));
+  };
+
+  const handleCloseSnackbar = () => {
+    setSnackbar({ ...snackbar, open: false });
+  };
 
   const createGroup = async () => {
-    if (!groupName.trim()) {
-      alert('グループ名を入力してください');
-      return;
-    }
-
     try {
-      await addDoc(collection(db, 'groups'), {
-        name: groupName,
-        createdAt: new Date(),
+      if (!groupName.trim() || members.length === 0) return;
+
+      const newGroup = {
+        name: groupName.trim(),
         createdBy: currentUser.uid,
+        createdAt: serverTimestamp(),
         members: [
           {
             uid: currentUser.uid,
-            username: currentUser.username,
-            role: 'admin',
+            userId: currentUser.userId || 'unknown',
+            username: currentUser.username || 'unknown',
+            role: 'admin'
           },
-          // 他のメンバーを追加するロジック
+          ...members.map(member => ({
+            uid: member.uid,
+            userId: member.userId || 'unknown',
+            username: member.username || 'unknown',
+            role: 'member'
+          }))
         ],
+        updatedAt: serverTimestamp()
+      };
+
+      await addDoc(collection(db, 'groups'), newGroup);
+
+      setSnackbar({
+        open: true,
+        message: 'グループを作成しました',
+        severity: 'success'
       });
 
-      setGroupName('');
-      alert('グループが作成されました');
+      setTimeout(() => {
+        navigate('/chatlist');
+      }, 1500);
+
     } catch (error) {
       console.error('グループ作成エラー:', error);
+      setSnackbar({
+        open: true,
+        message: 'グループの作成に失敗しました',
+        severity: 'error'
+      });
     }
   };
 
   return (
-    <Box sx={{ p: 3 }}>
-      <Typography variant="h4" gutterBottom>
-        グループ作成
-      </Typography>
-      <TextField
-        fullWidth
-        label="グループ名"
-        value={groupName}
-        onChange={(e) => setGroupName(e.target.value)}
-        placeholder="グループ名を入力"
-        variant="outlined"
-        sx={{ mb: 2 }}
-      />
-      <Button variant="contained" color="primary" onClick={createGroup}>
-        作成
-      </Button>
-    </Box>
+    <StyledPaper>
+      <Stack spacing={3}>
+        <Typography variant="h4" gutterBottom>
+          グループ作成
+        </Typography>
+        
+        <TextField
+          label="グループ名"
+          value={groupName}
+          onChange={(e) => setGroupName(e.target.value)}
+          fullWidth
+        />
+        
+        <Box>
+          <TextField
+            label="メンバーのユーザーID"
+            value={memberId}
+            onChange={(e) => setMemberId(e.target.value)}
+            fullWidth
+            onKeyPress={(e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault();
+                handleAddMember();
+              }
+            }}
+          />
+          <Button 
+            onClick={handleAddMember}
+            variant="outlined"
+            sx={{ mt: 1 }}
+          >
+            メンバーを追加
+          </Button>
+        </Box>
+
+        {members.length > 0 && (
+          <Box>
+            <Typography variant="subtitle1" gutterBottom>
+              追加されたメンバー:
+            </Typography>
+            <Stack direction="row" spacing={1} flexWrap="wrap">
+              {members.map((member) => (
+                <Chip
+                  key={member.userId}
+                  label={`${member.username} (${member.userId})`}
+                  onDelete={() => handleRemoveMember(member)}
+                  sx={{ m: 0.5 }}
+                />
+              ))}
+            </Stack>
+          </Box>
+        )}
+
+        <Button 
+          variant="contained"
+          onClick={createGroup}
+          disabled={!groupName.trim() || members.length === 0}
+        >
+          グループを作成
+        </Button>
+      </Stack>
+
+      <Snackbar 
+        open={snackbar.open} 
+        autoHideDuration={6000} 
+        onClose={handleCloseSnackbar}
+      >
+        <Alert 
+          onClose={handleCloseSnackbar} 
+          severity={snackbar.severity}
+          sx={{ width: '100%' }}
+        >
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
+    </StyledPaper>
   );
 }
 
