@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Container,
   TextField,
@@ -13,7 +13,7 @@ import {
 } from '@mui/material';
 import { motion } from 'framer-motion';
 import { db, auth } from '../../firebaseConfig';
-import { doc, setDoc } from 'firebase/firestore';
+import { doc, setDoc, getDoc } from 'firebase/firestore';
 import { useNavigate } from 'react-router-dom';
 import PersonIcon from '@mui/icons-material/Person';
 import PersonOutlineIcon from '@mui/icons-material/PersonOutline';
@@ -35,6 +35,10 @@ const UserAttributesPage = () => {
     try {
       const user = auth.currentUser;
       if (user) {
+        // 既存のユーザーデータを取得
+        const userDoc = await getDoc(doc(db, 'users', user.uid));
+        const existingData = userDoc.exists() ? userDoc.data() : {};
+
         const drinkingLevelMap = {
           0: 'weak',
           50: 'medium',
@@ -42,13 +46,11 @@ const UserAttributesPage = () => {
         };
 
         const userData = {
-          username: user.displayName || '', // Firebaseの認証情報からユーザー名を取得
-          email: user.email,
+          ...existingData, // 既存のデータを保持
           gender,
-          birthDate: birthdate, // ISO形式の文字列として保存
+          birthDate: birthdate,
           alcoholStrength: drinkingLevelMap[drinkingLevel],
           isProfileComplete: true,
-          createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
         };
 

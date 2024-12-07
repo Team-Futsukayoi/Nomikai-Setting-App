@@ -20,6 +20,7 @@ export const SignUp = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [userId, setUserId] = useState('');
+  const [username, setUsername] = useState('');
   const [error, setError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
   const [loading, setLoading] = useState(false);
@@ -29,9 +30,9 @@ export const SignUp = () => {
     e.preventDefault();
     setLoading(true);
 
-    // Validation for email and password
-    if (!email || !password || !userId) {
-      setError('メールアドレスとパスワード、ユーザIDを入力してください');
+    // Validation for all required fields
+    if (!email || !password || !userId || !username) {
+      setError('すべての項目を入力してください');
       setLoading(false);
       return;
     }
@@ -55,14 +56,13 @@ export const SignUp = () => {
       await setDoc(doc(db, 'users', user.uid), {
         email: user.email,
         userId: userId,
-        username: userId,
+        username: username,
         createdAt: new Date(),
         isProfileComplete: false,
       });
 
       await setDoc(doc(db, 'userIds', userId), { uid: user.uid });
 
-      // setSuccessMessage('アカウントが作成されました。');
       setTimeout(() => {
         setSuccessMessage('');
         navigate('/', {
@@ -70,7 +70,6 @@ export const SignUp = () => {
         });
       }, 1000);
     } catch (error) {
-      // Firebaseエラーを日本語に翻訳
       console.log('Error:', error.code);
       switch (error.code) {
         case 'auth/email-already-in-use':
@@ -111,13 +110,24 @@ export const SignUp = () => {
             <form onSubmit={handleSubmit}>
               <Stack spacing={3}>
                 <TextField
-                  label="ユーザーID"
+                  label="ユーザーID（一意の識別子）"
                   type="text"
                   fullWidth
                   required
                   value={userId}
                   onChange={(e) => setUserId(e.target.value)}
                   sx={authStyles.input}
+                  helperText="他のユーザーがあなたを見つけるために使用されます"
+                />
+                <TextField
+                  label="ユーザー名（表示名）"
+                  type="text"
+                  fullWidth
+                  required
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  sx={authStyles.input}
+                  helperText="チャットやグループで表示される名前です"
                 />
                 <TextField
                   label="メールアドレス"
