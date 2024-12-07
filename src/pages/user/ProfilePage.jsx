@@ -18,6 +18,8 @@ import {
   FormControl,
   InputLabel,
   Chip,
+  Autocomplete,
+  CircularProgress,
 } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
 import CheckIcon from '@mui/icons-material/Check';
@@ -273,6 +275,12 @@ const ProfilePage = () => {
   const [preferredLocations, setPreferredLocations] = useState([]);
   const [areaDetails, setAreaDetails] = useState(new Map());
   const [userId, setUserId] = useState('');
+  const [searchInput, setSearchInput] = useState('');
+  const [searchResults, setSearchResults] = useState([]);
+  const [nearbyAreas, setNearbyAreas] = useState([]);
+  const [isLoadingLocation, setIsLoadingLocation] = useState(true);
+  const [locationError, setLocationError] = useState(null);
+  const [showAllAreas, setShowAllAreas] = useState(false);
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -303,7 +311,7 @@ const ProfilePage = () => {
         }
       } catch (err) {
         setError('データの取得中にエラーが発生しました');
-        console.error('Firestoreエラー:', err);
+        console.error('Firestoreラー:', err);
       } finally {
         setLoading(false);
       }
@@ -438,6 +446,18 @@ const ProfilePage = () => {
     }
   };
 
+  const handleDeleteLocation = (placeIdToDelete) => {
+    const newLocations = preferredLocations.filter(
+      (id) => id !== placeIdToDelete
+    );
+    setPreferredLocations(newLocations);
+
+    // areaDetailsからも削除（オプション）
+    const newAreaDetails = new Map(areaDetails);
+    newAreaDetails.delete(placeIdToDelete);
+    setAreaDetails(newAreaDetails);
+  };
+
   const formatAreaName = (areaName) => {
     if (!areaName) return '';
     const parts = areaName
@@ -445,6 +465,295 @@ const ProfilePage = () => {
       .filter((part, index, array) => array.indexOf(part) === index);
     return parts.join(' ');
   };
+
+  const handlePlaceSearch = async (input) => {
+    try {
+      const google = await loader.load();
+      const service = new google.maps.places.AutocompleteService();
+
+      if (!input) {
+        setSearchResults([]);
+        return;
+      }
+
+      const request = {
+        input,
+        componentRestrictions: { country: 'jp' },
+        types: ['(regions)'],
+      };
+
+      service.getPlacePredictions(request, (predictions, status) => {
+        if (
+          status === google.maps.places.PlacesServiceStatus.OK &&
+          predictions
+        ) {
+          setSearchResults(predictions);
+        }
+      });
+    } catch (error) {
+      console.error('Error searching places:', error);
+    }
+  };
+
+  const handleLocationChange = (event) => {
+    const selectedPlaceIds = event.target.value;
+    setPreferredLocations(selectedPlaceIds);
+
+    selectedPlaceIds.forEach(async (placeId) => {
+      if (!areaDetails.has(placeId)) {
+        try {
+          const google = await loader.load();
+          const service = new google.maps.places.PlacesService(
+            document.createElement('div')
+          );
+
+          const result = await new Promise((resolve, reject) => {
+            service.getDetails(
+              {
+                placeId: placeId,
+                fields: ['name', 'address_components', 'formatted_address'],
+              },
+              (result, status) => {
+                if (status === google.maps.places.PlacesServiceStatus.OK) {
+                  resolve(result);
+                } else {
+                  reject(new Error('Failed to fetch place details'));
+                }
+              }
+            );
+          });
+
+          const components = result.address_components;
+          const prefecture = components.find((c) =>
+            c.types.includes('administrative_area_level_1')
+          );
+          const city = components.find((c) => c.types.includes('locality'));
+          const ward = components.find((c) =>
+            c.types.includes('sublocality_level_1')
+          );
+          const district = components.find((c) =>
+            c.types.includes('sublocality_level_2')
+          );
+
+          let areaName = '';
+          if (prefecture) areaName += prefecture.long_name;
+          if (city && city.long_name !== prefecture?.long_name)
+            areaName += ` ${city.long_name}`;
+          if (ward) areaName += ` ${ward.long_name}`;
+          if (district) areaName += ` ${district.long_name}`;
+
+          const finalAreaName = areaName.trim() || result.formatted_address;
+          setAreaDetails((prev) => new Map(prev).set(placeId, finalAreaName));
+        } catch (error) {
+          console.error('Error fetching area detail:', error);
+        }
+      }
+    });
+  };
+
+  const locationSelect = (
+    <FormControl fullWidth>
+      <StyledSelect
+        multiple
+        value={preferredLocations}
+        onChange={handleLocationChange}
+        renderValue={(selected) => (
+          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, m: -0.5 }}>
+            {selected.map((value) => (
+              <StyledChip
+                key={value}
+                label={areaDetails.get(value) || '読み込み中...'}
+                onDelete={() => handleDeleteLocation(value)}
+                onMouseDown={(event) => {
+                  event.stopPropagation();
+                }}
+                sx={{
+                  '& .MuiChip-deleteIcon': {
+                    color: '#FFA500',
+                    '&:hover': {
+                      color: '#FF8C00',
+                    },
+                  },
+                }}
+              />
+            ))}
+          </Box>
+        )}
+      >
+        {isLoadingLocation ? (
+          <Box sx={{ display: 'flex', justifyContent: 'center', p: 2 }}>
+            <CircularProgress size={24} sx={{ color: '#FFA500' }} />
+          </Box>
+        ) : locationError ? (
+          <MenuItem disabled>
+            <Typography color="error">{locationError}</Typography>
+          </MenuItem>
+        ) : (
+          nearbyAreas.map((area) => (
+            <StyledMenuItem key={area.value} value={area.value}>
+              {area.label}
+            </StyledMenuItem>
+          ))
+        )}
+      </StyledSelect>
+    </FormControl>
+  );
+
+  const getNearbyAreas = async () => {
+    try {
+      setIsLoadingLocation(true);
+      const google = await loader.load();
+      const service = new google.maps.places.PlacesService(
+        document.createElement('div')
+      );
+
+      const position = await new Promise((resolve, reject) => {
+        navigator.geolocation.getCurrentPosition(
+          resolve,
+          (error) => {
+            switch (error.code) {
+              case error.PERMISSION_DENIED:
+                reject(new Error('位置情報の使用が許可されていません。'));
+                break;
+              case error.POSITION_UNAVAILABLE:
+                reject(new Error('位置情報を取得できませんでした。'));
+                break;
+              case error.TIMEOUT:
+                reject(new Error('位置情報の取得がタイムアウトしました。'));
+                break;
+              default:
+                reject(error);
+            }
+          },
+          {
+            enableHighAccuracy: true,
+            timeout: 10000,
+            maximumAge: 30000,
+          }
+        );
+      });
+
+      const userCoords = {
+        lat: position.coords.latitude,
+        lng: position.coords.longitude,
+      };
+
+      const request = {
+        location: new google.maps.LatLng(userCoords.lat, userCoords.lng),
+        radius: 50000,
+        type: ['locality', 'sublocality', 'political'],
+      };
+
+      const results = await new Promise((resolve, reject) => {
+        service.nearbySearch(request, (results, status) => {
+          if (status === google.maps.places.PlacesServiceStatus.OK) {
+            resolve(results);
+          } else if (
+            status === google.maps.places.PlacesServiceStatus.ZERO_RESULTS
+          ) {
+            resolve([]);
+          } else {
+            reject(new Error('Places API error: ' + status));
+          }
+        });
+      });
+
+      const detailedResults = await Promise.all(
+        results.map(
+          (place) =>
+            new Promise((resolve, reject) => {
+              service.getDetails(
+                {
+                  placeId: place.place_id,
+                  fields: [
+                    'name',
+                    'geometry',
+                    'address_components',
+                    'formatted_address',
+                  ],
+                },
+                (result, status) => {
+                  if (status === google.maps.places.PlacesServiceStatus.OK) {
+                    const components = result.address_components;
+                    const city = components.find(
+                      (c) =>
+                        c.types.includes('locality') ||
+                        c.types.includes('administrative_area_level_1')
+                    );
+                    const ward = components.find(
+                      (c) =>
+                        c.types.includes('sublocality_level_1') ||
+                        c.types.includes('ward')
+                    );
+                    const district = components.find(
+                      (c) =>
+                        c.types.includes('sublocality_level_2') ||
+                        c.types.includes('sublocality_level_3')
+                    );
+
+                    let areaName = '';
+                    if (city) areaName += city.long_name;
+                    if (ward) areaName += ` ${ward.long_name}`;
+                    if (district) areaName += ` ${district.long_name}`;
+
+                    resolve({
+                      ...place,
+                      detailedName: areaName.trim(),
+                      geometry: result.geometry,
+                    });
+                  } else {
+                    resolve(place);
+                  }
+                }
+              );
+            })
+        )
+      );
+
+      const userLatLng = new google.maps.LatLng(userCoords.lat, userCoords.lng);
+      const uniqueAreas = new Map();
+
+      detailedResults.forEach((place) => {
+        if (place.detailedName && !uniqueAreas.has(place.detailedName)) {
+          const distance =
+            google.maps.geometry.spherical.computeDistanceBetween(
+              userLatLng,
+              place.geometry.location
+            );
+          uniqueAreas.set(place.detailedName, {
+            value: place.place_id,
+            label: place.detailedName,
+            distance: distance,
+          });
+        }
+      });
+
+      const nearestAreas = Array.from(uniqueAreas.values())
+        .sort((a, b) => a.distance - b.distance)
+        .map((area) => ({
+          value: area.value,
+          label: `${area.label} (約${Math.round(area.distance / 1000)}km)`,
+        }));
+
+      if (nearestAreas.length === 0) {
+        setLocationError('近くの地域が見つかりませんでした。');
+      } else {
+        setNearbyAreas(nearestAreas);
+      }
+    } catch (error) {
+      console.error('位置情報の取得に失敗:', error);
+      setLocationError(error.message || '位置情報の取得に失敗しました。');
+      setNearbyAreas([]);
+    } finally {
+      setIsLoadingLocation(false);
+    }
+  };
+
+  useEffect(() => {
+    if (editMode) {
+      getNearbyAreas();
+    }
+  }, [editMode]);
 
   if (loading) {
     return (
@@ -885,67 +1194,11 @@ const ProfilePage = () => {
                         variant="caption"
                         sx={{ color: 'text.secondary' }}
                       >
-                        複���選択可能です
+                        複数選択可能です
                       </Typography>
                     </Box>
                   </Box>
-                  <FormControl fullWidth>
-                    <StyledSelect
-                      multiple
-                      value={preferredLocations}
-                      onChange={(e) => setPreferredLocations(e.target.value)}
-                      renderValue={(selected) => (
-                        <Box
-                          sx={{
-                            display: 'flex',
-                            flexWrap: 'wrap',
-                            gap: 0.5,
-                            m: -0.5,
-                            width: '100%',
-                          }}
-                        >
-                          {selected.map((value) => (
-                            <StyledChip
-                              key={value}
-                              label={
-                                formatAreaName(areaDetails.get(value)) || value
-                              }
-                              onDelete={() => {
-                                setPreferredLocations(
-                                  preferredLocations.filter(
-                                    (item) => item !== value
-                                  )
-                                );
-                              }}
-                              onMouseDown={(event) => {
-                                event.stopPropagation();
-                              }}
-                            />
-                          ))}
-                        </Box>
-                      )}
-                      MenuProps={{
-                        PaperProps: {
-                          sx: {
-                            mt: 1,
-                            borderRadius: 2,
-                            maxHeight: '300px',
-                            '& .MuiMenuItem-root': {
-                              padding: '8px 16px',
-                              whiteSpace: 'normal',
-                              wordBreak: 'break-word',
-                            },
-                          },
-                        },
-                      }}
-                    >
-                      {preferredLocations.map((placeId) => (
-                        <MenuItem key={placeId} value={placeId}>
-                          {formatAreaName(areaDetails.get(placeId)) || placeId}
-                        </MenuItem>
-                      ))}
-                    </StyledSelect>
-                  </FormControl>
+                  {locationSelect}
                 </Box>
 
                 <Button
@@ -1083,7 +1336,7 @@ const ProfilePage = () => {
           </Box>
         </ProfileCard>
       </Fade>
-      {/* スクロール時にナビゲーションバーと重ならないようにするためのスペーサー */}
+      {/* スクロール時にナビゲーションバーと重ならな���ようにするためのスペーサー */}
       <Box sx={{ height: '60px' }} />
     </Container>
   );
