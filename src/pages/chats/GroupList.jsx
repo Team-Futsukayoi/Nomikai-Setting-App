@@ -128,8 +128,7 @@ const GroupList = ({ groupList }) => {
       ) : (
         <Typography>グループがありません</Typography>
       )}
-    </List>
-  );
+      </List>
     </StyledPaper>
   );
 };
