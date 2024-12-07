@@ -61,7 +61,7 @@ export const ChatListPage = () => {
           setUserInfo(userData);
 
           // フレンドリストを取得
-          const friendList = await fetchFriendsFromFirestore(userData.userId);
+          const friendList = await fetchFriendsFromFirestore(user.uid);
           setIsFriendList(friendList);
         } else {
           console.log('User document does not exist');
@@ -123,30 +123,52 @@ export const ChatListPage = () => {
           return;
         }
 
-        // すでにフレンドかどうか確認
+        // すでにフレンドかどうか確認（双方向）
         const friendsRef = collection(db, 'friends');
-        const friendCheckQuery = query(
+        
+        // 自分 -> 相手のフレンド関係を確認
+        const friendCheckQuery1 = query(
           friendsRef,
           where('userId', '==', currentUser.uid),
           where('friendId', '==', friendId)
         );
-        const friendCheckSnapshot = await getDocs(friendCheckQuery);
+        
+        // 相手 -> 自分のフレンド関係を確認
+        const friendCheckQuery2 = query(
+          friendsRef,
+          where('userId', '==', friendId),
+          where('friendId', '==', currentUser.uid)
+        );
 
-        if (!friendCheckSnapshot.empty) {
+        const [snapshot1, snapshot2] = await Promise.all([
+          getDocs(friendCheckQuery1),
+          getDocs(friendCheckQuery2)
+        ]);
+
+        if (!snapshot1.empty || !snapshot2.empty) {
           alert('すでにフレンドです');
           return;
         }
 
-        // フレンドを追加
-        await addDoc(collection(db, 'friends'), {
-          userId: userInfo.userId,
-          friendId: friendId,
-          createdAt: serverTimestamp(),
-        });
+        // フレンドを追加（双方���）
+        await Promise.all([
+          // 自分 -> 相手
+          addDoc(collection(db, 'friends'), {
+            userId: currentUser.uid,
+            friendId: friendId,
+            createdAt: serverTimestamp(),
+          }),
+          // 相手 -> 自分
+          addDoc(collection(db, 'friends'), {
+            userId: friendId,
+            friendId: currentUser.uid,
+            createdAt: serverTimestamp(),
+          })
+        ]);
 
         setFriendName('');
         // 更新されたフレンドリストを再取得
-        const updatedFriends = await fetchFriendsFromFirestore(userInfo.userId);
+        const updatedFriends = await fetchFriendsFromFirestore(currentUser.uid);
         setIsFriendList(updatedFriends);
       } catch (error) {
         console.error('フレンド追加中にエラーが発生しました:', error);
@@ -166,16 +188,21 @@ export const ChatListPage = () => {
         return [];
       }
 
-      const friendIds = querySnapshot.docs.map((doc) => doc.data().friendId);
+      // フレンドシップドキュメントのIDも含める
+      const friendships = querySnapshot.docs.map(doc => ({
+        friendshipId: doc.id,
+        ...doc.data()
+      }));
 
       const friendsData = await Promise.all(
-        friendIds.map(async (friendId) => {
-          const friendDocRef = doc(db, 'users', friendId);
+        friendships.map(async (friendship) => {
+          const friendDocRef = doc(db, 'users', friendship.friendId);
           const friendDocSnap = await getDoc(friendDocRef);
           if (friendDocSnap.exists()) {
             const friendData = friendDocSnap.data();
             return {
-              id: friendId,
+              id: `${friendship.friendshipId}_${friendship.friendId}`, // 一意のIDを生成
+              friendId: friendship.friendId,
               username: friendData.username,
               icon: friendData.icon,
               userId: friendData.userId,
