@@ -109,16 +109,7 @@ export const SignUp = () => {
 
             <form onSubmit={handleSubmit}>
               <Stack spacing={3}>
-                <TextField
-                  label="ユーザーID（一意の識別子）"
-                  type="text"
-                  fullWidth
-                  required
-                  value={userId}
-                  onChange={(e) => setUserId(e.target.value)}
-                  sx={authStyles.input}
-                  helperText="他のユーザーがあなたを見つけるために使用されます"
-                />
+                
                 <TextField
                   label="ユーザー名（表示名）"
                   type="text"
@@ -128,6 +119,16 @@ export const SignUp = () => {
                   onChange={(e) => setUsername(e.target.value)}
                   sx={authStyles.input}
                   helperText="チャットやグループで表示される名前です"
+                />
+                <TextField
+                  label="ユーザーID（一意の識別子）"
+                  type="text"
+                  fullWidth
+                  required
+                  value={userId}
+                  onChange={(e) => setUserId(e.target.value)}
+                  sx={authStyles.input}
+                  helperText="他のユーザーがあなたを見つけるために使用されます"
                 />
                 <TextField
                   label="メールアドレス"
