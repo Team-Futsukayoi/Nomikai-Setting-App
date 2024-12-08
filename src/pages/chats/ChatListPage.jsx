@@ -21,11 +21,15 @@ import {
   Stack,
   Snackbar,
   Alert,
+  IconButton,
+  InputAdornment,
+  AvatarGroup,
 } from '@mui/material';
 import PersonAdd from '@mui/icons-material/PersonAdd';
 import Groups from '@mui/icons-material/Groups';
 import People from '@mui/icons-material/People';
 import GroupAdd from '@mui/icons-material/GroupAdd';
+import SearchIcon from '@mui/icons-material/Search';
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { auth, db } from '../../firebaseConfig';
@@ -53,7 +57,7 @@ import {
 } from '../../styles/chatlistpageStyles';
 
 export const ChatListPage = () => {
-  // ユ��ザー情報取得
+  // ユーザー情報取得
   const { currentUser } = useAuth();
 
   // 状態管理
@@ -250,51 +254,45 @@ export const ChatListPage = () => {
   };
 
   // 検索機能
-  const handleSearch = async (searchText) => {
-    if (!searchText.trim()) {
+  const handleSearch = async (query) => {
+    if (!query.trim()) {
       setSearchResults([]);
       return;
     }
 
     setIsSearching(true);
     try {
-      const usersRef = collection(db, 'users');
-      const q = searchText.toLowerCase();
-      
-      // ユーザーIDで検索
-      const idQuery = query(
-        usersRef,
-        where('userId', '>=', q),
-        where('userId', '<=', q + '\uf8ff'),
-        limit(5)
-      );
+      if (isFriendClicked) {
+        // フレンドリストから検索
+        const filteredFriends = isFriendList.filter(friend => {
+          if (!friend) return false;
+          
+          const searchTerm = query.toLowerCase();
+          return (
+            (friend.userId && friend.userId.toLowerCase().includes(searchTerm)) ||
+            (friend.username && friend.username.toLowerCase().includes(searchTerm))
+          );
+        });
+        
+        setSearchResults(filteredFriends);
+      } else {
+        // グループリストから検索
+        const filteredGroups = groupList.filter(group => {
+          if (!group || !group.name || !Array.isArray(group.members)) return false;
 
-      // ユーザー名で検索
-      const nameQuery = query(
-        usersRef,
-        where('username', '>=', q),
-        where('username', '<=', q + '\uf8ff'),
-        limit(5)
-      );
-
-      const [idResults, nameResults] = await Promise.all([
-        getDocs(idQuery),
-        getDocs(nameQuery)
-      ]);
-
-      // 結果をマージして重複を除去
-      const results = new Map();
-      [...idResults.docs, ...nameResults.docs].forEach(doc => {
-        if (!results.has(doc.id)) {
-          results.set(doc.id, { id: doc.id, ...doc.data() });
-        }
-      });
-
-      // 自分を除外して配列に変換
-      const filteredResults = Array.from(results.values())
-        .filter(user => user.id !== currentUser.uid);
-
-      setSearchResults(filteredResults);
+          const searchTerm = query.toLowerCase();
+          const nameMatch = group.name.toLowerCase().includes(searchTerm);
+          const memberMatch = group.members.some(member => 
+            member && (
+              (member.userId && member.userId.toLowerCase().includes(searchTerm)) ||
+              (member.username && member.username.toLowerCase().includes(searchTerm))
+            )
+          );
+          
+          return nameMatch || memberMatch;
+        });
+        setSearchResults(filteredGroups);
+      }
     } catch (error) {
       console.error('検索中にエラーが発生しました:', error);
       setSearchResults([]);
@@ -306,11 +304,26 @@ export const ChatListPage = () => {
   // 検索入力のディバウンス処理
   useEffect(() => {
     const timeoutId = setTimeout(() => {
-      handleSearch(searchQuery);
-    }, 500);
+      if (searchQuery) {
+        handleSearch(searchQuery);
+      } else {
+        setSearchResults([]);
+      }
+    }, 300);
 
     return () => clearTimeout(timeoutId);
-  }, [searchQuery]);
+  }, [searchQuery, isFriendClicked, isFriendList, groupList]);
+
+  // チャットページへの遷移
+  const handleChatNavigation = (item) => {
+    if (isFriendClicked) {
+      // フレンドとのチャットへ
+      navigate(`/chat/${item.friendId}`);
+    } else {
+      // グループチャットへ
+      navigate(`/chat/group/${item.id}`);
+    }
+  };
 
   // フレンド追加モーダルを開く
   const handleOpenAddFriendModal = () => {
@@ -405,7 +418,7 @@ export const ChatListPage = () => {
       userId: currentUser.userId,
       username: currentUser.username,
       role: 'admin',
-      isCurrentUser: true // 自分であることを示すフラグ
+      isCurrentUser: true // 自��であることを示すフラグ
     }]);
     setIsCreateGroupModalOpen(true);
   };
@@ -571,24 +584,90 @@ export const ChatListPage = () => {
       <Box sx={{ bgcolor: 'background.default', minHeight: '100vh', py: 4 }}>
         <Container maxWidth="md">
           <Box my={4}>
-            {/* ユーザー検索フォーム */}
+            {/* ナビゲーション部分 */}
             <StyledPaper sx={{ mb: 4 }}>
-              <Grid container spacing={2} alignItems="center">
-                <Grid item xs={12}>
+              <Box sx={{ 
+                display: 'flex', 
+                alignItems: 'center', 
+                justifyContent: 'space-between',
+                borderBottom: 1,
+                borderColor: 'divider',
+                pb: 1
+              }}>
+                <Box sx={{ display: 'flex', gap: 2 }}>
+                  <StyledButton
+                    variant={isFriendClicked ? 'contained' : 'text'}
+                    startIcon={<People />}
+                    onClick={() => {
+                      setIsFriendClicked(true);
+                      setIsGroupClicked(false);
+                    }}
+                    sx={{ 
+                      borderRadius: '4px 4px 0 0',
+                      ...(isFriendClicked && {
+                        backgroundColor: 'primary.main',
+                        color: 'white',
+                        '&:hover': {
+                          backgroundColor: 'primary.dark',
+                        },
+                      }),
+                    }}
+                  >
+                    フレンド
+                  </StyledButton>
+                  <StyledButton
+                    variant={isGroupClicked ? 'contained' : 'text'}
+                    startIcon={<Groups />}
+                    onClick={() => {
+                      setIsGroupClicked(true);
+                      setIsFriendClicked(false);
+                    }}
+                    sx={{ 
+                      borderRadius: '4px 4px 0 0',
+                      ...(isGroupClicked && {
+                        backgroundColor: 'primary.main',
+                        color: 'white',
+                        '&:hover': {
+                          backgroundColor: 'primary.dark',
+                        },
+                      }),
+                    }}
+                  >
+                    グループ
+                  </StyledButton>
+                </Box>
+                <IconButton 
+                  onClick={() => setSearchQuery(searchQuery ? '' : ' ')} 
+                  color="primary"
+                  sx={{ p: 1 }}
+                >
+                  <SearchIcon />
+                </IconButton>
+              </Box>
+
+              {/* 検索フォーム */}
+              {searchQuery !== null && (
+                <Box sx={{ mt: 2 }}>
                   <StyledTextField
-                    label="ユーザーを検索"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     fullWidth
                     variant="outlined"
-                    placeholder="ユーザー名またはIDで検索"
+                    placeholder={isFriendClicked ? "フレンドを検索" : "グループを検索"}
+                    InputProps={{
+                      startAdornment: (
+                        <InputAdornment position="start">
+                          <SearchIcon color="action" />
+                        </InputAdornment>
+                      ),
+                    }}
                   />
-                </Grid>
-              </Grid>
+                </Box>
+              )}
             </StyledPaper>
 
             {/* 検索結果表示エリア */}
-            {searchQuery && (
+            {searchQuery && searchQuery.trim() && (
               <StyledPaper sx={{ mb: 4 }}>
                 <Typography variant="h6" sx={{ mb: 2 }}>
                   検索結果
@@ -599,67 +678,69 @@ export const ChatListPage = () => {
                   </Box>
                 ) : searchResults.length > 0 ? (
                   <List>
-                    {searchResults.map((user) => (
+                    {searchResults.map((item) => (
                       <ListItem
-                        key={user.id}
+                        key={isFriendClicked ? item.id : item.id}
                         sx={{
                           borderRadius: 1,
                           mb: 1,
+                          cursor: 'pointer',
                           '&:hover': {
                             bgcolor: 'rgba(0, 0, 0, 0.04)',
                           },
                         }}
+                        onClick={() => handleChatNavigation(item)}
                       >
-                        <ListItemAvatar>
-                          <Avatar src={user.icon} alt={user.username} />
-                        </ListItemAvatar>
-                        <ListItemText
-                          primary={user.username}
-                          secondary={`ID: ${user.userId}`}
-                        />
-                        <StyledButton
-                          variant="contained"
-                          startIcon={<PersonAdd />}
-                          onClick={() => handleAddFriend(user)}
-                          size="small"
-                        >
-                          フレンド追加
-                        </StyledButton>
+                        {isFriendClicked ? (
+                          // フレンド検索結果
+                          <>
+                            <ListItemAvatar>
+                              <Avatar src={item.icon} alt={item.userId || item.username} />
+                            </ListItemAvatar>
+                            <ListItemText
+                              primary={item.username || item.userId}
+                              secondary={item.username ? `ID: ${item.userId}` : null}
+                            />
+                          </>
+                        ) : (
+                          // グループ検索結果
+                          <>
+                            <ListItemAvatar>
+                              <AvatarGroup
+                                max={3}
+                                sx={{
+                                  '& .MuiAvatar-root': {
+                                    width: 40,
+                                    height: 40,
+                                    fontSize: '1rem',
+                                  },
+                                }}
+                              >
+                                {item.members.map((member) => (
+                                  <Avatar
+                                    key={member.uid}
+                                    alt={member.userId || member.username}
+                                    src={member.icon}
+                                  />
+                                ))}
+                              </AvatarGroup>
+                            </ListItemAvatar>
+                            <ListItemText
+                              primary={item.name}
+                              secondary={`${item.members.length}人のメンバー`}
+                            />
+                          </>
+                        )}
                       </ListItem>
                     ))}
                   </List>
                 ) : (
                   <Typography color="text.secondary" sx={{ p: 2 }}>
-                    ユーザーが見つかりませんでした
+                    {isFriendClicked ? 'フレンドが見つかりません' : 'グループが見つかりません'}
                   </Typography>
                 )}
               </StyledPaper>
             )}
-
-            {/* フレンド/グループ切り替えボタン */}
-            <Box sx={{ display: 'flex', justifyContent: 'center', mb: 4 }}>
-              <StyledButton
-                variant={isFriendClicked ? 'contained' : 'outlined'}
-                startIcon={<People />}
-                onClick={() => {
-                  setIsFriendClicked(true);
-                  setIsGroupClicked(false);
-                }}
-                sx={{ mr: 2 }}
-              >
-                フレンド
-              </StyledButton>
-              <StyledButton
-                variant={isGroupClicked ? 'contained' : 'outlined'}
-                startIcon={<Groups />}
-                onClick={() => {
-                  setIsGroupClicked(true);
-                  setIsFriendClicked(false);
-                }}
-              >
-                グループ
-              </StyledButton>
-            </Box>
 
             {/* リスト表示 */}
             <StyledPaper>
