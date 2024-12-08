@@ -25,6 +25,8 @@ import { useAuth } from '../../hooks/useAuth';
 import { theme, StyledPaper, StyledButton } from '../../styles/chatlistpageStyles';
 import { AddFriendModal } from '../../components/friends/AddFriendModal';
 import { CreateGroupModal } from '../../components/groups/CreateGroupModal';
+import SearchIcon from '@mui/icons-material/Search';
+import { SearchDialog } from '../../components/search/SearchDialog';
 
 export const ChatListPage = () => {
   // ユーザー情報取得
@@ -38,6 +40,7 @@ export const ChatListPage = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isAddFriendModalOpen, setIsAddFriendModalOpen] = useState(false);
   const [isCreateGroupModalOpen, setIsCreateGroupModalOpen] = useState(false);
+  const [isSearchDialogOpen, setIsSearchDialogOpen] = useState(false);
 
   // フレンドリストを取得
   const fetchFriendsFromFirestore = async (userId) => {
@@ -172,6 +175,14 @@ export const ChatListPage = () => {
             >
               グループ
             </StyledButton>
+            <StyledButton
+              variant="outlined"
+              startIcon={<SearchIcon />}
+              onClick={() => setIsSearchDialogOpen(true)}
+              sx={{ width: '100%' }}
+            >
+              検索
+            </StyledButton>
           </Box>
         </Box>
 
@@ -234,6 +245,16 @@ export const ChatListPage = () => {
           onClose={() => setIsCreateGroupModalOpen(false)}
           currentUser={currentUser}
           onGroupCreated={() => fetchGroups()}
+        />
+
+        {/* 検索ダイアログ */}
+        <SearchDialog
+          open={isSearchDialogOpen}
+          onClose={() => setIsSearchDialogOpen(false)}
+          friendList={friendList}
+          groupList={groupList}
+          onSelectFriend={(friendId) => navigate(`/chat/${friendId}`)}
+          onSelectGroup={(groupId) => navigate(`/chat/group/${groupId}`)}
         />
       </Box>
     </ThemeProvider>
