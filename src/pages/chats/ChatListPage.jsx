@@ -128,7 +128,7 @@ export const ChatListPage = () => {
       
       return groups;
     } catch (error) {
-      console.error('グループ��取得に失敗しました:', error);
+      console.error('グループリストの取得に失敗しました:', error);
       return [];
     }
   };
@@ -601,67 +601,49 @@ export const ChatListPage = () => {
       <Box sx={{ bgcolor: 'background.default', minHeight: '100vh', py: 4 }}>
         <Container maxWidth="md">
           <Box my={4}>
-            {/* ナナー部分 */}
-            <StyledPaper sx={{ mb: 4 }}>
-              <Box sx={{ 
-                display: 'flex', 
-                alignItems: 'center', 
-                justifyContent: 'space-between',
-                borderBottom: 1,
-                borderColor: 'divider',
-                pb: 1
-              }}>
-                <Box sx={{ display: 'flex', gap: 2 }}>
-                  <StyledButton
-                    variant={isFriendClicked ? 'contained' : 'text'}
-                    startIcon={<People />}
-                    onClick={() => {
-                      setIsFriendClicked(true);
-                      setIsGroupClicked(false);
-                    }}
-                    sx={{ 
-                      borderRadius: '4px 4px 0 0',
-                      ...(isFriendClicked && {
-                        backgroundColor: 'primary.main',
-                        color: 'white',
-                        '&:hover': {
-                          backgroundColor: 'primary.dark',
-                        },
-                      }),
-                    }}
-                  >
-                    フレンド
-                  </StyledButton>
-                  <StyledButton
-                    variant={isGroupClicked ? 'contained' : 'text'}
-                    startIcon={<Groups />}
-                    onClick={() => {
-                      setIsGroupClicked(true);
-                      setIsFriendClicked(false);
-                    }}
-                    sx={{ 
-                      borderRadius: '4px 4px 0 0',
-                      ...(isGroupClicked && {
-                        backgroundColor: 'primary.main',
-                        color: 'white',
-                        '&:hover': {
-                          backgroundColor: 'primary.dark',
-                        },
-                      }),
-                    }}
-                  >
-                    グループ
-                  </StyledButton>
-                </Box>
-                <IconButton 
-                  onClick={handleOpenSearchModal}
-                  color="primary"
-                  sx={{ p: 1 }}
+            {/* ナレンド/グループ切り替えボタンと検索 */}
+            <Box sx={{ 
+              display: 'flex', 
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              mb: 4 
+            }}>
+              <Box sx={{ display: 'flex' }}>
+                <StyledButton
+                  variant={isFriendClicked ? 'contained' : 'outlined'}
+                  startIcon={<People />}
+                  onClick={() => {
+                    setIsFriendClicked(true);
+                    setIsGroupClicked(false);
+                  }}
+                  sx={{ mr: 2 }}
                 >
-                  <SearchIcon />
-                </IconButton>
+                  フレンド
+                </StyledButton>
+                <StyledButton
+                  variant={isGroupClicked ? 'contained' : 'outlined'}
+                  startIcon={<Groups />}
+                  onClick={() => {
+                    setIsGroupClicked(true);
+                    setIsFriendClicked(false);
+                  }}
+                >
+                  グループ
+                </StyledButton>
               </Box>
-            </StyledPaper>
+              <IconButton
+                onClick={handleOpenSearchModal}
+                color="primary"
+                sx={{
+                  bgcolor: 'action.hover',
+                  '&:hover': {
+                    bgcolor: 'action.selected',
+                  },
+                }}
+              >
+                <SearchIcon />
+              </IconButton>
+            </Box>
 
             {/* リスト表示 */}
             <StyledPaper>
@@ -841,7 +823,7 @@ export const ChatListPage = () => {
           </DialogActions>
         </Dialog>
 
-        {/* グループ作成モーダル */}
+        {/* グ��ープ作成モーダル */}
         <Dialog
           open={isCreateGroupModalOpen}
           onClose={handleCloseCreateGroupModal}
