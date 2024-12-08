@@ -17,6 +17,10 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
+  Chip,
+  Stack,
+  Snackbar,
+  Alert,
 } from '@mui/material';
 import PersonAdd from '@mui/icons-material/PersonAdd';
 import Groups from '@mui/icons-material/Groups';
@@ -66,6 +70,16 @@ export const ChatListPage = () => {
   const [isAddFriendModalOpen, setIsAddFriendModalOpen] = useState(false);
   const [newFriendId, setNewFriendId] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isCreateGroupModalOpen, setIsCreateGroupModalOpen] = useState(false);
+  const [groupName, setGroupName] = useState('');
+  const [memberId, setMemberId] = useState('');
+  const [groupMembers, setGroupMembers] = useState([]);
+  const [isCreatingGroup, setIsCreatingGroup] = useState(false);
+  const [snackbar, setSnackbar] = useState({
+    open: false,
+    message: '',
+    severity: 'success'
+  });
 
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged(async (user) => {
@@ -153,7 +167,7 @@ export const ChatListPage = () => {
         return;
       }
 
-      // フレンド��追加（双方向）
+      // フレンドを追加（双方向）
       await Promise.all([
         // 自分 -> 相手
         addDoc(collection(db, 'friends'), {
@@ -375,6 +389,120 @@ export const ChatListPage = () => {
     }
   };
 
+  // グループ作成モーダルを開く
+  const handleOpenCreateGroupModal = () => {
+    setIsCreateGroupModalOpen(true);
+  };
+
+  // グループ作成モーダルを閉じる
+  const handleCloseCreateGroupModal = () => {
+    setIsCreateGroupModalOpen(false);
+    setGroupName('');
+    setMemberId('');
+    setGroupMembers([]);
+  };
+
+  // メンバー追加の処理
+  const handleAddGroupMember = async () => {
+    if (memberId.trim() && !groupMembers.some(m => m.userId === memberId.trim())) {
+      try {
+        const usersRef = collection(db, 'users');
+        const q = query(usersRef, where('userId', '==', memberId.trim()));
+        const querySnapshot = await getDocs(q);
+        
+        if (!querySnapshot.empty) {
+          const userData = querySnapshot.docs[0].data();
+          setGroupMembers([...groupMembers, {
+            userId: memberId.trim(),
+            username: userData.username,
+            uid: querySnapshot.docs[0].id
+          }]);
+          setMemberId('');
+          setSnackbar({
+            open: true,
+            message: 'メンバーを追加しました',
+            severity: 'success'
+          });
+        } else {
+          setSnackbar({
+            open: true,
+            message: 'ユーザーが見つかりません',
+            severity: 'error'
+          });
+        }
+      } catch (error) {
+        console.error('メンバー追加エラー:', error);
+        setSnackbar({
+          open: true,
+          message: 'メンバーの追加に失敗しました',
+          severity: 'error'
+        });
+      }
+    }
+  };
+
+  // メンバー削除の処理
+  const handleRemoveGroupMember = (memberToRemove) => {
+    setGroupMembers(groupMembers.filter(member => member.userId !== memberToRemove.userId));
+  };
+
+  // グループ作成の処理
+  const handleCreateGroup = async () => {
+    if (!groupName.trim() || groupMembers.length === 0) return;
+
+    setIsCreatingGroup(true);
+    try {
+      const newGroup = {
+        name: groupName.trim(),
+        createdBy: currentUser.uid,
+        createdAt: serverTimestamp(),
+        members: [
+          {
+            uid: currentUser.uid,
+            userId: currentUser.userId || 'unknown',
+            username: currentUser.username || 'unknown',
+            role: 'admin'
+          },
+          ...groupMembers.map(member => ({
+            uid: member.uid,
+            userId: member.userId,
+            username: member.username,
+            role: 'member'
+          }))
+        ],
+        updatedAt: serverTimestamp()
+      };
+
+      await addDoc(collection(db, 'groups'), newGroup);
+
+      setSnackbar({
+        open: true,
+        message: 'グループを作成しました',
+        severity: 'success'
+      });
+
+      // グループリストを更新
+      const updatedGroups = await fetchGroups();
+      setGroupList(updatedGroups);
+
+      handleCloseCreateGroupModal();
+    } catch (error) {
+      console.error('グループ作成エラー:', error);
+      setSnackbar({
+        open: true,
+        message: 'グループの作成に失敗しました',
+        severity: 'error'
+      });
+    } finally {
+      setIsCreatingGroup(false);
+    }
+  };
+
+  // Snackbarを閉じる
+  const handleCloseSnackbar = () => {
+    setSnackbar({ ...snackbar, open: false });
+  };
+
   if (!userInfo) {
     return (
       <Box
@@ -505,19 +633,20 @@ export const ChatListPage = () => {
                 </Box>
               )}
               {isGroupClicked && (
-                <>
-                  <StyledButton
-                    variant="contained"
-                    onClick={() => navigate('/groups/create')}
-                    startIcon={<GroupAdd />}
-                    sx={{ mb: 2 }}
-                  >
-                    新しいグループを作成
-                  </StyledButton>
+                <Box>
+                  <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 2 }}>
+                    <StyledButton
+                      variant="contained"
+                      startIcon={<GroupAdd />}
+                      onClick={handleOpenCreateGroupModal}
+                    >
+                      グループを作成
+                    </StyledButton>
+                  </Box>
                   <Box sx={{ maxHeight: '400px', overflowY: 'auto' }}>
                     <GroupList groupList={groupList} />
                   </Box>
-                </>
+                </Box>
               )}
             </StyledPaper>
           </Box>
@@ -560,6 +689,96 @@ export const ChatListPage = () => {
           </Button>
         </DialogActions>
       </Dialog>
+
+      {/* グループ作成モーダル */}
+      <Dialog
+        open={isCreateGroupModalOpen}
+        onClose={handleCloseCreateGroupModal}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle>新しいグループを作成</DialogTitle>
+        <DialogContent>
+          <Stack spacing={3} sx={{ mt: 2 }}>
+            <TextField
+              label="グループ名"
+              value={groupName}
+              onChange={(e) => setGroupName(e.target.value)}
+              fullWidth
+              variant="outlined"
+            />
+            
+            <Box>
+              <TextField
+                label="メンバーのユーザーID"
+                value={memberId}
+                onChange={(e) => setMemberId(e.target.value)}
+                fullWidth
+                variant="outlined"
+                onKeyPress={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    handleAddGroupMember();
+                  }
+                }}
+              />
+              <Button 
+                onClick={handleAddGroupMember}
+                variant="outlined"
+                sx={{ mt: 1 }}
+              >
+                メンバーを追加
+              </Button>
+            </Box>
+
+            {groupMembers.length > 0 && (
+              <Box>
+                <Typography variant="subtitle1" gutterBottom>
+                  追加されたメンバー:
+                </Typography>
+                <Stack direction="row" spacing={1} flexWrap="wrap">
+                  {groupMembers.map((member) => (
+                    <Chip
+                      key={member.userId}
+                      label={`${member.username} (${member.userId})`}
+                      onDelete={() => handleRemoveGroupMember(member)}
+                      sx={{ m: 0.5 }}
+                    />
+                  ))}
+                </Stack>
+              </Box>
+            )}
+          </Stack>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCloseCreateGroupModal} color="primary">
+            キャンセル
+          </Button>
+          <Button
+            onClick={handleCreateGroup}
+            color="primary"
+            variant="contained"
+            disabled={isCreatingGroup || !groupName.trim() || groupMembers.length === 0}
+          >
+            {isCreatingGroup ? <CircularProgress size={24} /> : 'グループを作成'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Snackbar */}
+      <Snackbar 
+        open={snackbar.open} 
+        autoHideDuration={6000} 
+        onClose={handleCloseSnackbar}
+      >
+        <Alert 
+          onClose={handleCloseSnackbar} 
+          severity={snackbar.severity}
+          sx={{ width: '100%' }}
+        >
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
     </ThemeProvider>
   );
 };
