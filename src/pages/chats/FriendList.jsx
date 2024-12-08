@@ -17,16 +17,7 @@ export const FriendList = ({ friendList }) => {
   // console.log('FriendList component received:', friendList);
   return (
     <StyledPaper>
-      <Typography
-        variant="h5"
-        sx={{
-          mb: 3,
-          fontWeight: 600,
-          color: 'primary.dark',
-        }}
-      >
-        フレンドリスト
-      </Typography>
+      
       <List sx={{ width: '100%', maxHeight: '300px', overflowY: 'auto' }}>
         {friendList && friendList.length > 0 ? (
           friendList.map(({ id, username, userId, icon }) => (

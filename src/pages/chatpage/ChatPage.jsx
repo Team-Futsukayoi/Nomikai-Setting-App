@@ -11,6 +11,7 @@ import {
   serverTimestamp,
   doc,
   getDoc,
+  getDocs,
 } from 'firebase/firestore';
 import {
   Box,
@@ -38,15 +39,28 @@ function ChatPage() {
   const messagesEndRef = useRef(null);
 
   useEffect(() => {
+    console.log('Debug - currentUser:', currentUser?.uid);
+    console.log('Debug - friendId:', friendId);
+    
     if (currentUser && friendId) {
+      const cleanFriendId = friendId.split('_').pop() || friendId;
+      console.log('Debug - Clean friendId:', cleanFriendId);
+
       // フレンド情報を取得
-      const friendRef = doc(db, 'users', friendId);
+      const friendRef = doc(db, 'users', cleanFriendId);
       getDoc(friendRef)
         .then((docSnap) => {
+          console.log('Debug - Friend doc exists:', docSnap.exists());
           if (docSnap.exists()) {
-            setFriendInfo(docSnap.data());
+            const friendData = docSnap.data();
+            console.log('Debug - Friend data:', friendData);
+            setFriendInfo(friendData);
           } else {
-            console.log('フレンド情報が見つかりません');
+            console.error('フレンド情報が見つかりません。ID:', cleanFriendId);
+            // Firestoreのusersコレクションの内容を確認
+            getDocs(collection(db, 'users')).then(snapshot => {
+              console.log('Available users:', snapshot.docs.map(d => ({ id: d.id, ...d.data() })));
+            });
           }
         })
         .catch((error) => {
@@ -61,16 +75,46 @@ function ChatPage() {
       );
 
       const unsubscribe = onSnapshot(q, (querySnapshot) => {
+        // 最初のメッセージの内容を詳しく確認
+        const firstMessage = querySnapshot.docs[0]?.data();
+        console.log('Debug - First message details:', {
+          messageData: firstMessage,
+          participantsType: typeof firstMessage?.participants,
+          participantsContent: firstMessage?.participants
+        });
+        
         const fetchedMessages = querySnapshot.docs
           .map((doc) => ({
             id: doc.id,
             ...doc.data(),
           }))
-          .filter(
-            (msg) =>
-              msg.participants.includes(currentUser.uid) &&
-              msg.participants.includes(friendId)
-          );
+          .filter(msg => {
+            const participants = msg.participants;
+            
+            // デバッグ用に実際の値を表示
+            console.log('Debug - Message filtering:', {
+              messageId: msg.id,
+              text: msg.text,
+              participants,
+              currentUser: currentUser.uid,
+              cleanFriendId: cleanFriendId,
+              senderId: msg.userId,
+              matchInfo: {
+                hasCurrentUser: participants.includes(currentUser.uid),
+                hasCleanFriendId: participants.includes(cleanFriendId),
+                participantsCount: participants.length
+              }
+            });
+
+            // 1対1のチャットメッセージのみをフィルタリング
+            return (
+              participants.length === 2 &&
+              participants.includes(currentUser.uid) &&
+              participants.includes(cleanFriendId)
+            );
+          });
+        
+        console.log('Debug - Filtered messages:', fetchedMessages);
         setMessages(fetchedMessages);
       });
 
@@ -89,12 +133,16 @@ function ChatPage() {
     if (newMessage.trim() === '') return;
 
     try {
-      await addDoc(collection(db, 'messages'), {
+      const cleanFriendId = friendId.split('_').pop() || friendId;
+      const messageData = {
         text: newMessage,
         createdAt: serverTimestamp(),
         userId: currentUser.uid,
-        participants: [currentUser.uid, friendId],
-      });
+        participants: [currentUser.uid, cleanFriendId].sort(),
+      };
+
+      console.log('Debug - Sending message:', messageData);
+      await addDoc(collection(db, 'messages'), messageData);
 
       setNewMessage('');
     } catch (error) {
@@ -189,7 +237,7 @@ function ChatPage() {
             gap: 1.5,
             mb: '72px',
             maxHeight: 'calc(100vh - 100px)',
-            // iOS用のスクロールバウンス対策
+            // iOS用のスロールバウンス対策
             WebkitOverflowScrolling: 'touch',
           }}
         >

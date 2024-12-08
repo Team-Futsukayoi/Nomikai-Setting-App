@@ -32,27 +32,25 @@ export const StyledPaper = styled(Paper)(({ theme }) => ({
 
 // Buttonのスタイリング
 export const StyledButton = styled(Button)(({ theme }) => ({
-  borderRadius: 25,
-  padding: '10px 30px',
+  borderRadius: '12px',
   textTransform: 'none',
-  fontWeight: 600,
-  boxShadow: '0 4px 12px rgba(255, 215, 0, 0.2)',
+  fontSize: '1rem',
+  fontWeight: 500,
+  boxShadow: 'none',
   '&:hover': {
-    boxShadow: '0 6px 16px rgba(255, 215, 0, 0.3)',
+    boxShadow: 'none',
   },
   '&.MuiButton-contained': {
     backgroundColor: theme.palette.primary.main,
-    color: theme.palette.primary.dark,
     '&:hover': {
-      backgroundColor: theme.palette.primary.light,
+      backgroundColor: theme.palette.primary.dark,
     },
   },
   '&.MuiButton-outlined': {
-    borderColor: theme.palette.primary.main,
-    color: theme.palette.primary.dark,
+    borderColor: theme.palette.divider,
     '&:hover': {
-      backgroundColor: 'rgba(255, 215, 0, 0.08)',
-      borderColor: theme.palette.primary.dark,
+      backgroundColor: theme.palette.action.hover,
+      borderColor: theme.palette.primary.main,
     },
   },
 }));

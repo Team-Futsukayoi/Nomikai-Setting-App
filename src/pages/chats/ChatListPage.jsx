@@ -1,181 +1,50 @@
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { auth, db } from '../../firebaseConfig';
 import {
   Box,
   Button,
-  Container,
-  TextField,
   Typography,
-  Avatar,
-  Grid,
   Paper,
   ThemeProvider,
   CircularProgress,
 } from '@mui/material';
 import PersonAdd from '@mui/icons-material/PersonAdd';
-import Groups from '@mui/icons-material/Groups';
-import People from '@mui/icons-material/People';
 import GroupAdd from '@mui/icons-material/GroupAdd';
-import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { auth, db } from '../../firebaseConfig';
-import {
-  collection,
-  addDoc,
-  getDocs,
-  doc,
-  getDoc,
-  query,
+import { 
+  collection, 
+  getDocs, 
+  query, 
   where,
-  serverTimestamp,
-  limit,
+  doc,
+  getDoc
 } from 'firebase/firestore';
 import FriendList from './FriendList';
 import GroupList from './GroupList';
-import { fetchFriendList } from './mock_api';
 import { useAuth } from '../../hooks/useAuth';
-import {
-  theme,
-  StyledPaper,
-  StyledButton,
-  StyledTextField,
-} from '../../styles/chatlistpageStyles';
+import { theme, StyledPaper, StyledButton } from '../../styles/chatlistpageStyles';
+import { AddFriendModal } from '../../components/friends/AddFriendModal';
+import { CreateGroupModal } from '../../components/groups/CreateGroupModal';
+import SearchIcon from '@mui/icons-material/Search';
+import { SearchDialog } from '../../components/search/SearchDialog';
+import People from '@mui/icons-material/People';
+import Groups from '@mui/icons-material/Groups';
 
 export const ChatListPage = () => {
   // ユーザー情報取得
   const { currentUser } = useAuth();
+  const navigate = useNavigate();
 
   // 状態管理
   const [isFriendClicked, setIsFriendClicked] = useState(true);
-  const [isGroupClicked, setIsGroupClicked] = useState(false);
-  const [isFriendList, setIsFriendList] = useState([]);
-  const [friendName, setFriendName] = useState('');
-  const [userInfo, setUserInfo] = useState(null);
+  const [friendList, setFriendList] = useState([]);
   const [groupList, setGroupList] = useState([]);
-  const navigate = useNavigate();
+  const [isLoading, setIsLoading] = useState(true);
+  const [isAddFriendModalOpen, setIsAddFriendModalOpen] = useState(false);
+  const [isCreateGroupModalOpen, setIsCreateGroupModalOpen] = useState(false);
+  const [isSearchDialogOpen, setIsSearchDialogOpen] = useState(false);
 
-  useEffect(() => {
-    const unsubscribe = auth.onAuthStateChanged(async (user) => {
-      if (user) {
-        const userDoc = await getDoc(doc(db, 'users', user.uid));
-        if (userDoc.exists()) {
-          const userData = userDoc.data();
-          setUserInfo(userData);
-
-          // フレンドリストを取得
-          const friendList = await fetchFriendsFromFirestore(user.uid);
-          setIsFriendList(friendList);
-        } else {
-          console.log('User document does not exist');
-        }
-      } else {
-        navigate('/signin');
-      }
-    });
-
-    return () => unsubscribe();
-  }, [navigate]);
-
-  useEffect(() => {
-    const fetchGroups = async () => {
-      if (!currentUser) return;
-      
-      try {
-        const groupsRef = collection(db, 'groups');
-        const querySnapshot = await getDocs(groupsRef);
-        
-        // クライアント側でフィルタリング
-        const groups = querySnapshot.docs
-          .map(doc => ({ id: doc.id, ...doc.data() }))
-          .filter(group => 
-            group.members && 
-            Array.isArray(group.members) && 
-            group.members.some(member => member.uid === currentUser.uid)
-          );
-        
-        setGroupList(groups || []);
-      } catch (error) {
-        console.error('グループの取得に失敗しました:', error);
-        setGroupList([]);
-      }
-    };
-
-    fetchGroups();
-  }, [currentUser]);
-
-  const handleAddFriend = async () => {
-    if (friendName.trim() && currentUser) {
-      try {
-        // ユーザーIDでユーザーを検索
-        const usersRef = collection(db, 'users');
-        const q = query(usersRef, where('userId', '==', friendName));
-        const querySnapshot = await getDocs(q);
-
-        if (querySnapshot.empty) {
-          alert('ユーザーが見つかりません');
-          return;
-        }
-
-        const friendUser = querySnapshot.docs[0];
-        const friendId = friendUser.id;
-
-        // 自分自身をフレンドに追加しようとしていないか確認
-        if (friendId === currentUser.uid) {
-          alert('自分自身をフレンドに追加することはできません');
-          return;
-        }
-
-        // すでにフレンドかどうか確認（双方向）
-        const friendsRef = collection(db, 'friends');
-        
-        // 自分 -> 相手のフレンド関係を確認
-        const friendCheckQuery1 = query(
-          friendsRef,
-          where('userId', '==', currentUser.uid),
-          where('friendId', '==', friendId)
-        );
-        
-        // 相手 -> 自分のフレンド関係を確認
-        const friendCheckQuery2 = query(
-          friendsRef,
-          where('userId', '==', friendId),
-          where('friendId', '==', currentUser.uid)
-        );
-
-        const [snapshot1, snapshot2] = await Promise.all([
-          getDocs(friendCheckQuery1),
-          getDocs(friendCheckQuery2)
-        ]);
-
-        if (!snapshot1.empty || !snapshot2.empty) {
-          alert('すでにフレンドです');
-          return;
-        }
-
-        // フレンドを追加（双方向）
-        await Promise.all([
-          // 自分 -> 相手
-          addDoc(collection(db, 'friends'), {
-            userId: currentUser.uid,
-            friendId: friendId,
-            createdAt: serverTimestamp(),
-          }),
-          // 相手 -> 自分
-          addDoc(collection(db, 'friends'), {
-            userId: friendId,
-            friendId: currentUser.uid,
-            createdAt: serverTimestamp(),
-          })
-        ]);
-
-        setFriendName('');
-        // 更新されたフレンドリストを再取得
-        const updatedFriends = await fetchFriendsFromFirestore(currentUser.uid);
-        setIsFriendList(updatedFriends);
-      } catch (error) {
-        console.error('フレンド追加中にエラーが発生しました:', error);
-      }
-    }
-  };
-
+  // フレンドリストを取得
   const fetchFriendsFromFirestore = async (userId) => {
     try {
       const friendsQuery = query(
@@ -184,11 +53,6 @@ export const ChatListPage = () => {
       );
       const querySnapshot = await getDocs(friendsQuery);
 
-      if (querySnapshot.empty) {
-        return [];
-      }
-
-      // フレンドシップドキュメントのIDも含める
       const friendships = querySnapshot.docs.map(doc => ({
         friendshipId: doc.id,
         ...doc.data()
@@ -196,158 +60,258 @@ export const ChatListPage = () => {
 
       const friendsData = await Promise.all(
         friendships.map(async (friendship) => {
-          const friendDocRef = doc(db, 'users', friendship.friendId);
-          const friendDocSnap = await getDoc(friendDocRef);
-          if (friendDocSnap.exists()) {
-            const friendData = friendDocSnap.data();
-            return {
-              id: `${friendship.friendshipId}_${friendship.friendId}`, // 一意のIDを生成
-              friendId: friendship.friendId,
-              username: friendData.username,
-              icon: friendData.icon,
-              userId: friendData.userId,
-            };
-          } else {
+          try {
+            const friendDocRef = doc(db, 'users', friendship.friendId);
+            const friendDocSnap = await getDoc(friendDocRef);
+            
+            if (friendDocSnap.exists()) {
+              const friendData = friendDocSnap.data();
+              return {
+                id: `${friendship.friendshipId}_${friendship.friendId}`,
+                friendId: friendship.friendId,
+                username: friendData.username,
+                icon: friendData.icon,
+                userId: friendData.userId,
+              };
+            }
+            return null;
+          } catch (error) {
             return null;
           }
         })
       );
 
-      return friendsData.filter((friend) => friend !== null);
+      const validFriends = friendsData.filter(friend => friend !== null);
+      return validFriends;
     } catch (error) {
       console.error('フレンドリストの取得に失敗しました:', error);
       return [];
     }
   };
 
-  if (!userInfo) {
+  // グループリストを取得
+  const fetchGroups = async () => {
+    if (!currentUser) return [];
+    
+    try {
+      const groupsRef = collection(db, 'groups');
+      const querySnapshot = await getDocs(groupsRef);
+      
+      return querySnapshot.docs
+        .map(doc => ({ id: doc.id, ...doc.data() }))
+        .filter(group => 
+          group.members && 
+          Array.isArray(group.members) && 
+          group.members.some(member => member.uid === currentUser.uid)
+        );
+    } catch (error) {
+      console.error('グループリストの取得に失敗しました:', error);
+      return [];
+    }
+  };
+
+  // データの初期読み込み
+  useEffect(() => {
+    const loadData = async () => {
+      if (currentUser) {
+        setIsLoading(true);
+        try {
+          const [friends, groups] = await Promise.all([
+            fetchFriendsFromFirestore(currentUser.uid),
+            fetchGroups()
+          ]);
+          setFriendList(friends);
+          setGroupList(groups);
+        } catch (error) {
+          console.error('データの読み込みに失敗しました:', error);
+        } finally {
+          setIsLoading(false);
+        }
+      }
+    };
+
+    loadData();
+  }, [currentUser]);
+
+  if (isLoading) {
     return (
-      <Box
-        sx={{
-          display: 'flex',
-          justifyContent: 'center',
-          alignItems: 'center',
-          minHeight: '100vh',
-          bgcolor: 'background.default',
-        }}
-      >
-        <CircularProgress sx={{ color: 'primary.main' }} />
+      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh' }}>
+        <CircularProgress />
       </Box>
     );
   }
 
   return (
     <ThemeProvider theme={theme}>
-      <Box sx={{ bgcolor: 'background.default', minHeight: '100vh', py: 4 }}>
-        <Container maxWidth="md">
-          <Box my={4}>
-            {/* ユーザー情報表示 */}
-            <StyledPaper sx={{ mb: 4 }}>
-              <Grid container spacing={3} alignItems="center">
-                <Grid item>
-                  <Avatar
-                    src={currentUser?.icon}
-                    alt={currentUser?.username}
-                    sx={{
-                      width: 100,
-                      height: 100,
-                      border: 4,
-                      borderColor: 'primary.main',
-                    }}
-                  />
-                </Grid>
-                <Grid item>
-                  <Typography
-                    variant="h4"
-                    fontWeight="bold"
-                    color="text.primary"
-                  >
-                    {currentUser?.username}
-                  </Typography>
-                  <Typography variant="subtitle1" color="text.secondary">
-                    オンライン
-                  </Typography>
-                </Grid>
-              </Grid>
-            </StyledPaper>
+      <Box sx={{ 
+        bgcolor: 'background.default',
+        minHeight: '100vh',
+        display: 'flex',
+        flexDirection: { xs: 'column', md: 'row' }
+      }}>
+        {/* サイドナビゲーション */}
+        <Box sx={{
+          width: { xs: '100%', md: '280px' },
+          bgcolor: 'background.paper',
+          borderRight: { md: 1 },
+          borderColor: 'divider',
+          p: { xs: 2, md: 3 },
+          position: { md: 'sticky' },
+          top: { md: '64px' },  // ヘッダーの高さ分
+          height: { md: 'calc(100vh - 64px)' },
+          overflowY: 'auto'
+        }}>
+          {/* タブボタン */}
+          <Box sx={{ 
+            display: 'flex',
+            flexDirection: { xs: 'row', md: 'column' },
+            gap: 2,
+            mb: { xs: 2, md: 4 }
+          }}>
+            <StyledButton
+              variant={isFriendClicked ? 'contained' : 'outlined'}
+              startIcon={<People />}
+              onClick={() => setIsFriendClicked(true)}
+              sx={{ 
+                flex: { xs: 1, md: 'auto' },
+                padding: '10px 30px',
+                borderRadius: 25,
+                fontWeight: 600,
+                boxShadow: '0 4px 12px rgba(255, 215, 0, 0.2)',
+                '&:hover': {
+                  boxShadow: '0 6px 16px rgba(255, 215, 0, 0.3)'
+                }
+              }}
+            >
+              フレンド
+            </StyledButton>
+            <StyledButton
+              variant={!isFriendClicked ? 'contained' : 'outlined'}
+              startIcon={<Groups />}
+              onClick={() => setIsFriendClicked(false)}
+              sx={{ 
+                flex: { xs: 1, md: 'auto' },
+                padding: '10px 30px',
+                borderRadius: 25,
+                fontWeight: 600,
+                boxShadow: '0 4px 12px rgba(255, 215, 0, 0.2)',
+                '&:hover': {
+                  boxShadow: '0 6px 16px rgba(255, 215, 0, 0.3)'
+                }
+              }}
+            >
+              グループ
+            </StyledButton>
+          </Box>
 
-            {/* フレンド/グループ切り替えボタン */}
-            <Box sx={{ display: 'flex', justifyContent: 'center', mb: 4 }}>
-              <StyledButton
-                variant={isFriendClicked ? 'contained' : 'outlined'}
-                startIcon={<People />}
-                onClick={() => {
-                  setIsFriendClicked(true);
-                  setIsGroupClicked(false);
+          {/* 検索ボタン */}
+          <StyledButton
+            variant="outlined"
+            startIcon={<SearchIcon />}
+            onClick={() => setIsSearchDialogOpen(true)}
+            sx={{
+              width: '100%',
+              padding: '10px 30px',
+              borderRadius: 25,
+              fontWeight: 600,
+              boxShadow: '0 4px 12px rgba(255, 215, 0, 0.2)',
+              '&:hover': {
+                boxShadow: '0 6px 16px rgba(255, 215, 0, 0.3)'
+              }
+            }}
+          >
+            検索
+          </StyledButton>
+        </Box>
+
+        {/* メインコンテンツ */}
+        <Box sx={{ 
+          flex: 1,
+          p: { xs: 2, md: 3 },
+          maxWidth: { md: '800px' },
+          mx: 'auto',
+          width: '100%',
+          '& > *': {
+            maxWidth: 'inherit',
+            mx: { xs: 0, md: 3 }
+          }
+        }}>
+          <StyledPaper>
+            <Box sx={{ 
+              p: 2,
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              borderBottom: 1,
+              borderColor: 'divider',
+              mb: 2
+            }}>
+              <Typography 
+                variant="h5" 
+                sx={{ 
+                  fontWeight: 600,
+                  color: 'primary.dark',
+                  mb: 0
                 }}
-                sx={{ mr: 2 }}
               >
-                フレンド
-              </StyledButton>
+                {isFriendClicked ? 'フレンドリスト' : 'グループリスト'}
+              </Typography>
               <StyledButton
-                variant={isGroupClicked ? 'contained' : 'outlined'}
-                startIcon={<Groups />}
-                onClick={() => {
-                  setIsGroupClicked(true);
-                  setIsFriendClicked(false);
-                }}
+                variant="contained"
+                startIcon={isFriendClicked ? <PersonAdd /> : <GroupAdd />}
+                onClick={() => isFriendClicked ? 
+                  setIsAddFriendModalOpen(true) : 
+                  setIsCreateGroupModalOpen(true)
+                }
+                sx={{ whiteSpace: 'nowrap' }}
               >
-                グループ
+                {isFriendClicked ? 'フレンドを追加' : 'グループを作成'}
               </StyledButton>
             </Box>
 
-            {/* フレンド追加フォーム */}
-            <StyledPaper sx={{ mb: 4 }}>
-              <Grid container spacing={2} alignItems="center">
-                <Grid item xs={9}>
-                  <StyledTextField
-                    label="ユーザーIDを入力"
-                    value={friendName}
-                    onChange={(e) => setFriendName(e.target.value)}
-                    fullWidth
-                    variant="outlined"
-                    placeholder="新しいフレンドを追加"
-                  />
-                </Grid>
-                <Grid item xs={3}>
-                  <StyledButton
-                    variant="contained"
-                    startIcon={<PersonAdd />}
-                    onClick={handleAddFriend}
-                    fullWidth
-                    sx={{ whiteSpace: 'nowrap' }}
-                  >
-                    追加
-                  </StyledButton>
-                </Grid>
-              </Grid>
-            </StyledPaper>
+            <Box sx={{ 
+              maxHeight: '400px',
+              overflowY: 'auto'
+            }}>
+              {isFriendClicked ? (
+                <FriendList 
+                  friendList={friendList} 
+                  onChatStart={(friendId) => navigate(`/chat/${friendId}`)} 
+                />
+              ) : (
+                <GroupList 
+                  groupList={groupList} 
+                  onChatStart={(groupId) => navigate(`/chat/group/${groupId}`)} 
+                />
+              )}
+            </Box>
+          </StyledPaper>
+        </Box>
 
-            {/* リスト表示 */}
-            <StyledPaper>
-              {isFriendClicked && (
-                <Box sx={{ maxHeight: '400px', overflowY: 'auto' }}>
-                  <FriendList friendList={isFriendList} />
-                </Box>
-              )}
-              {isGroupClicked && (
-                <>
-                  <StyledButton
-                    variant="contained"
-                    onClick={() => navigate('/groups/create')}
-                    startIcon={<GroupAdd />}
-                    sx={{ mb: 2 }}
-                  >
-                    新しいグループを作成
-                  </StyledButton>
-                  <Box sx={{ maxHeight: '400px', overflowY: 'auto' }}>
-                    <GroupList groupList={groupList} />
-                  </Box>
-                </>
-              )}
-            </StyledPaper>
-          </Box>
-        </Container>
+        {/* モーダル */}
+        <AddFriendModal
+          open={isAddFriendModalOpen}
+          onClose={() => setIsAddFriendModalOpen(false)}
+          currentUser={currentUser}
+          onFriendAdded={() => fetchFriendsFromFirestore(currentUser.uid)}
+        />
+
+        <CreateGroupModal
+          open={isCreateGroupModalOpen}
+          onClose={() => setIsCreateGroupModalOpen(false)}
+          currentUser={currentUser}
+          onGroupCreated={() => fetchGroups()}
+        />
+
+        {/* 検索ダイアログ */}
+        <SearchDialog
+          open={isSearchDialogOpen}
+          onClose={() => setIsSearchDialogOpen(false)}
+          friendList={friendList}
+          groupList={groupList}
+          onSelectFriend={(friendId) => navigate(`/chat/${friendId}`)}
+          onSelectGroup={(groupId) => navigate(`/chat/group/${groupId}`)}
+        />
       </Box>
     </ThemeProvider>
   );
