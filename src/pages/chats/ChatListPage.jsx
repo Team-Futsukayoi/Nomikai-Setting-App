@@ -53,7 +53,7 @@ import {
 } from '../../styles/chatlistpageStyles';
 
 export const ChatListPage = () => {
-  // ユーザー情報取得
+  // ユ��ザー情報取得
   const { currentUser } = useAuth();
 
   // 状態管理
@@ -103,31 +103,39 @@ export const ChatListPage = () => {
     return () => unsubscribe();
   }, [navigate]);
 
-  useEffect(() => {
-    const fetchGroups = async () => {
-      if (!currentUser) return;
+  // グループリストを取得する関数
+  const fetchGroups = async () => {
+    if (!currentUser) return [];
+    
+    try {
+      const groupsRef = collection(db, 'groups');
+      const querySnapshot = await getDocs(groupsRef);
       
-      try {
-        const groupsRef = collection(db, 'groups');
-        const querySnapshot = await getDocs(groupsRef);
-        
-        // クライアント側でフィルタリング
-        const groups = querySnapshot.docs
-          .map(doc => ({ id: doc.id, ...doc.data() }))
-          .filter(group => 
-            group.members && 
-            Array.isArray(group.members) && 
-            group.members.some(member => member.uid === currentUser.uid)
-          );
-        
-        setGroupList(groups || []);
-      } catch (error) {
-        console.error('グループの取得に失敗しました:', error);
-        setGroupList([]);
+      // クライアント側でフィルタリング
+      const groups = querySnapshot.docs
+        .map(doc => ({ id: doc.id, ...doc.data() }))
+        .filter(group => 
+          group.members && 
+          Array.isArray(group.members) && 
+          group.members.some(member => member.uid === currentUser.uid)
+        );
+      
+      return groups;
+    } catch (error) {
+      console.error('グループの取得に失敗しました:', error);
+      return [];
+    }
+  };
+
+  useEffect(() => {
+    const loadGroups = async () => {
+      if (currentUser) {
+        const groups = await fetchGroups();
+        setGroupList(groups);
       }
     };
 
-    fetchGroups();
+    loadGroups();
   }, [currentUser]);
 
   const handleAddFriend = async (targetUser) => {
@@ -209,7 +217,7 @@ export const ChatListPage = () => {
         return [];
       }
 
-      // フレンドシップドキュメントのIDも含める
+      // フレンドシップドキュメントのID含める
       const friendships = querySnapshot.docs.map(doc => ({
         friendshipId: doc.id,
         ...doc.data()
@@ -391,64 +399,103 @@ export const ChatListPage = () => {
 
   // グループ作成モーダルを開く
   const handleOpenCreateGroupModal = () => {
+    // 自分をメンバーとして初期設定
+    setGroupMembers([{
+      uid: currentUser.uid,
+      userId: currentUser.userId,
+      username: currentUser.username,
+      role: 'admin',
+      isCurrentUser: true // 自分であることを示すフラグ
+    }]);
     setIsCreateGroupModalOpen(true);
-  };
-
-  // グループ作成モーダルを閉じる
-  const handleCloseCreateGroupModal = () => {
-    setIsCreateGroupModalOpen(false);
-    setGroupName('');
-    setMemberId('');
-    setGroupMembers([]);
   };
 
   // メンバー追加の処理
   const handleAddGroupMember = async () => {
-    if (memberId.trim() && !groupMembers.some(m => m.userId === memberId.trim())) {
-      try {
-        const usersRef = collection(db, 'users');
-        const q = query(usersRef, where('userId', '==', memberId.trim()));
-        const querySnapshot = await getDocs(q);
-        
-        if (!querySnapshot.empty) {
-          const userData = querySnapshot.docs[0].data();
-          setGroupMembers([...groupMembers, {
-            userId: memberId.trim(),
-            username: userData.username,
-            uid: querySnapshot.docs[0].id
-          }]);
-          setMemberId('');
-          setSnackbar({
-            open: true,
-            message: 'メンバーを追加しました',
-            severity: 'success'
-          });
-        } else {
-          setSnackbar({
-            open: true,
-            message: 'ユーザーが見つかりません',
-            severity: 'error'
-          });
-        }
-      } catch (error) {
-        console.error('メンバー追加エラー:', error);
+    if (!memberId.trim()) return;
+
+    // 自分のIDと同じ場合は追加しない
+    if (memberId.trim() === currentUser.userId) {
+      setSnackbar({
+        open: true,
+        message: '自分自身を追加することはできません',
+        severity: 'warning'
+      });
+      setMemberId('');
+      return;
+    }
+
+    // 既に追加済みのメンバーかチェック
+    if (groupMembers.some(m => m.userId === memberId.trim())) {
+      setSnackbar({
+        open: true,
+        message: '既に追加されているメンバーです',
+        severity: 'warning'
+      });
+      setMemberId('');
+      return;
+    }
+
+    try {
+      const usersRef = collection(db, 'users');
+      const q = query(usersRef, where('userId', '==', memberId.trim()));
+      const querySnapshot = await getDocs(q);
+      
+      if (!querySnapshot.empty) {
+        const userData = querySnapshot.docs[0].data();
+        setGroupMembers([...groupMembers, {
+          userId: memberId.trim(),
+          username: userData.username,
+          uid: querySnapshot.docs[0].id,
+          role: 'member'
+        }]);
+        setMemberId('');
         setSnackbar({
           open: true,
-          message: 'メンバーの追加に失敗しました',
+          message: 'メンバーを追加しました',
+          severity: 'success'
+        });
+      } else {
+        setSnackbar({
+          open: true,
+          message: 'ユーザーが見つかりません',
           severity: 'error'
         });
       }
+    } catch (error) {
+      console.error('メンバー追加エラー:', error);
+      setSnackbar({
+        open: true,
+        message: 'メンバーの追加に失敗しました',
+        severity: 'error'
+      });
     }
   };
 
   // メンバー削除の処理
   const handleRemoveGroupMember = (memberToRemove) => {
+    // 自分（管理者）は削除できない
+    if (memberToRemove.isCurrentUser) {
+      setSnackbar({
+        open: true,
+        message: '管理者は削除できません',
+        severity: 'warning'
+      });
+      return;
+    }
     setGroupMembers(groupMembers.filter(member => member.userId !== memberToRemove.userId));
   };
 
   // グループ作成の処理
   const handleCreateGroup = async () => {
-    if (!groupName.trim() || groupMembers.length === 0) return;
+    if (!groupName.trim() || groupMembers.length <= 1) {
+      setSnackbar({
+        open: true,
+        message: 'グループ名と少なくとも1人のメンバーを追加してください',
+        severity: 'warning'
+      });
+      return;
+    }
 
     setIsCreatingGroup(true);
     try {
@@ -456,20 +503,12 @@ export const ChatListPage = () => {
         name: groupName.trim(),
         createdBy: currentUser.uid,
         createdAt: serverTimestamp(),
-        members: [
-          {
-            uid: currentUser.uid,
-            userId: currentUser.userId || 'unknown',
-            username: currentUser.username || 'unknown',
-            role: 'admin'
-          },
-          ...groupMembers.map(member => ({
-            uid: member.uid,
-            userId: member.userId,
-            username: member.username,
-            role: 'member'
-          }))
-        ],
+        members: groupMembers.map(member => ({
+          uid: member.uid,
+          userId: member.userId,
+          username: member.username,
+          role: member.role
+        })),
         updatedAt: serverTimestamp()
       };
 
@@ -496,6 +535,14 @@ export const ChatListPage = () => {
     } finally {
       setIsCreatingGroup(false);
     }
+  };
+
+  // グループ作成モーダルを閉じる
+  const handleCloseCreateGroupModal = () => {
+    setIsCreateGroupModalOpen(false);
+    setGroupName('');
+    setMemberId('');
+    setGroupMembers([]);
   };
 
   // Snackbarを閉じる
@@ -734,14 +781,15 @@ export const ChatListPage = () => {
             {groupMembers.length > 0 && (
               <Box>
                 <Typography variant="subtitle1" gutterBottom>
-                  追加されたメンバー:
+                  メンバー:
                 </Typography>
                 <Stack direction="row" spacing={1} flexWrap="wrap">
                   {groupMembers.map((member) => (
                     <Chip
                       key={member.userId}
-                      label={`${member.username} (${member.userId})`}
-                      onDelete={() => handleRemoveGroupMember(member)}
+                      label={`${member.username}${member.isCurrentUser ? ' (管理者)' : ''}`}
+                      onDelete={member.isCurrentUser ? undefined : () => handleRemoveGroupMember(member)}
+                      color={member.isCurrentUser ? 'primary' : 'default'}
                       sx={{ m: 0.5 }}
                     />
                   ))}
