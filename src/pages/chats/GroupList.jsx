@@ -20,16 +20,7 @@ const GroupList = ({ groupList }) => {
   
   return (
     <StyledPaper>
-      <Typography
-        variant="h5"
-        sx={{
-          mb: 3,
-          fontWeight: 600,
-          color: 'primary.dark',
-        }}
-      >
-        グループリスト
-      </Typography>
+      
       <List sx={{ width: '100%', maxHeight: '300px', overflowY: 'auto' }}>
         {groups.length > 0 ? (
         groups.map((group) => (
