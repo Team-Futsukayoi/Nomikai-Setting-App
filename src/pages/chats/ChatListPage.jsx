@@ -128,7 +128,7 @@ export const ChatListPage = () => {
       
       return groups;
     } catch (error) {
-      console.error('グループリスト���取得に失敗しました:', error);
+      console.error('グループリストの取得に失敗しました:', error);
       return [];
     }
   };
@@ -296,7 +296,7 @@ export const ChatListPage = () => {
         setSearchResults(filteredGroups);
       }
     } catch (error) {
-      console.error('検索中にエラーが発生しました:', error);
+      console.error('検索中にエラーが発生し��した:', error);
       setSearchResults([]);
     } finally {
       setIsSearching(false);
@@ -345,7 +345,7 @@ export const ChatListPage = () => {
 
     setIsSubmitting(true);
     try {
-      // ユーザーIDでユーザー���索
+      // ユーザーIDでユーザー検索
       const usersRef = collection(db, 'users');
       const q = query(usersRef, where('userId', '==', newFriendId.trim()));
       const querySnapshot = await getDocs(q);

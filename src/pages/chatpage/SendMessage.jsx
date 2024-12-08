@@ -15,9 +15,8 @@ function SendMessage({ friendId, currentUserId }) {
       await addDoc(collection(db, 'messages'), {
         text: message,
         createdAt: serverTimestamp(),
-        uid: currentUserId,
-        friendId: friendId,
-        participants: [currentUserId, friendId]
+        userId: currentUserId,
+        participants: [currentUserId, friendId].sort(),
       });
       setMessage('');
     } catch (error) {
