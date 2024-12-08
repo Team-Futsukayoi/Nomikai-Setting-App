@@ -128,7 +128,7 @@ export const ChatListPage = () => {
       
       return groups;
     } catch (error) {
-      console.error('グループリストの取得に失敗しました:', error);
+      console.error('グループリスト���取得に失敗しました:', error);
       return [];
     }
   };
@@ -296,7 +296,7 @@ export const ChatListPage = () => {
         setSearchResults(filteredGroups);
       }
     } catch (error) {
-      console.error('検索中にエラーが発生しました:', error);
+      console.error('検索中にエラーが発生し��した:', error);
       setSearchResults([]);
     } finally {
       setIsSearching(false);
@@ -488,7 +488,7 @@ export const ChatListPage = () => {
     }
   };
 
-  // メンバー削除の処理
+  // メン���ー削除の処理
   const handleRemoveGroupMember = (memberToRemove) => {
     // 自分（管理者）は削除できない
     if (memberToRemove.isCurrentUser) {
@@ -599,148 +599,154 @@ export const ChatListPage = () => {
   return (
     <ThemeProvider theme={theme}>
       <Box sx={{ 
-        bgcolor: 'background.default', 
+        bgcolor: 'background.default',
         minHeight: '100vh',
-        py: { xs: 2, sm: 4 }  // スマートフォンでの余白を調整
+        display: 'flex',
+        flexDirection: { xs: 'column', md: 'row' }
       }}>
-        <Container 
-          maxWidth="md"
+        {/* サイドナビゲーション - デスクトップでは左側、モバイルでは上部 */}
+        <Box
           sx={{
-            px: { xs: 1, sm: 2, md: 3 }  // 画面サイズに応じて横幅の余白を調整
+            width: { xs: '100%', md: '280px' },
+            height: { xs: 'auto', md: '100vh' },
+            bgcolor: 'background.paper',
+            borderRight: { md: 1 },
+            borderBottom: { xs: 1, md: 0 },
+            borderColor: 'divider',
+            position: 'sticky',
+            top: 0,
+            zIndex: 1,
+            py: { xs: 1, md: 3 },
+            px: { xs: 2, md: 3 },
           }}
         >
-          <Box my={{ xs: 2, sm: 4 }}>
-            <Box sx={{ 
-              display: 'flex', 
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              mb: { xs: 2, sm: 4 },
-              flexDirection: { xs: 'column', sm: 'row' },  // スマートフォンでは縦並び
-              gap: { xs: 2, sm: 0 }  // スマートフォンでの要素間の間隔
-            }}>
-              <Box sx={{ 
-                display: 'flex',
-                width: { xs: '100%', sm: 'auto' },
-                justifyContent: { xs: 'center', sm: 'flex-start' }
-              }}>
-                <StyledButton
-                  variant={isFriendClicked ? 'contained' : 'outlined'}
-                  startIcon={<People />}
-                  onClick={() => {
-                    setIsFriendClicked(true);
-                    setIsGroupClicked(false);
-                  }}
-                  sx={{ 
-                    mr: 2,
-                    flex: { xs: 1, sm: 'none' },  // スマートフォンでは均等幅
-                    maxWidth: { xs: '160px', sm: 'none' }  // 最大幅を制限
-                  }}
-                >
-                  フレンド
-                </StyledButton>
-                <StyledButton
-                  variant={isGroupClicked ? 'contained' : 'outlined'}
-                  startIcon={<Groups />}
-                  onClick={() => {
-                    setIsGroupClicked(true);
-                    setIsFriendClicked(false);
-                  }}
-                  sx={{ 
-                    flex: { xs: 1, sm: 'none' },  // スマートフォンでは均等幅
-                    maxWidth: { xs: '160px', sm: 'none' }  // 最大幅���制限
-                  }}
-                >
-                  グループ
-                </StyledButton>
-              </Box>
-              <IconButton
-                onClick={handleOpenSearchModal}
-                color="primary"
-                sx={{
-                  bgcolor: 'action.hover',
-                  '&:hover': {
-                    bgcolor: 'action.selected',
-                  },
-                  position: { xs: 'fixed', sm: 'static' },  // スマートフォンでは固定位置
-                  bottom: { xs: 72, sm: 'auto' },  // ナビゲーションバーの上に配置
-                  right: { xs: 16, sm: 'auto' },
-                  zIndex: { xs: 1000, sm: 1 },
-                  boxShadow: { 
-                    xs: '0 2px 8px rgba(0,0,0,0.15)', 
-                    sm: 'none' 
-                  }
-                }}
-              >
-                <SearchIcon />
-              </IconButton>
-            </Box>
-
-            {/* リスト表示 */}
-            <StyledPaper
-              sx={{
-                p: { xs: 1, sm: 2 },  // パディングを調整
-                mb: { xs: 7, sm: 0 }  // スマートフォンでは下部にマージンを追加（ナビゲーションバー対策）
+          {/* フレンド/グループ切替ボタン */}
+          <Box sx={{ 
+            display: 'flex',
+            flexDirection: { xs: 'row', md: 'column' },
+            gap: 2,
+            mb: { xs: 2, md: 4 }
+          }}>
+            <StyledButton
+              variant={isFriendClicked ? 'contained' : 'outlined'}
+              onClick={() => {
+                setIsFriendClicked(true);
+                setIsGroupClicked(false);
+              }}
+              sx={{ 
+                flex: { xs: 1, md: 'auto' },
+                py: 1.5,
+                fontSize: '1rem',
+                justifyContent: 'flex-start',
+                px: 3,
               }}
             >
-              {isFriendClicked && (
-                <Box>
-                  <Box sx={{ 
-                    display: 'flex', 
-                    justifyContent: 'flex-end', 
-                    mb: 2,
-                    px: { xs: 1, sm: 0 }  // 横パディングを調整
-                  }}>
-                    <StyledButton
-                      variant="contained"
-                      startIcon={<PersonAdd />}
-                      onClick={handleOpenAddFriendModal}
-                      size="small"
-                      sx={{
-                        fontSize: { xs: '0.875rem', sm: '1rem' }
-                      }}
-                    >
-                      フレンドを追加
-                    </StyledButton>
-                  </Box>
-                  <Box sx={{ 
-                    maxHeight: { xs: 'calc(100vh - 280px)', sm: '400px' },  // 高さを調整
-                    overflowY: 'auto' 
-                  }}>
-                    <FriendList friendList={isFriendList} />
-                  </Box>
-                </Box>
-              )}
-              {isGroupClicked && (
-                <Box>
-                  <Box sx={{ 
-                    display: 'flex', 
-                    justifyContent: 'flex-end', 
-                    mb: 2,
-                    px: { xs: 1, sm: 0 }  // 横パディングを調整
-                  }}>
-                    <StyledButton
-                      variant="contained"
-                      startIcon={<GroupAdd />}
-                      onClick={handleOpenCreateGroupModal}
-                      size="small"
-                      sx={{
-                        fontSize: { xs: '0.875rem', sm: '1rem' }
-                      }}
-                    >
-                      グループを作成
-                    </StyledButton>
-                  </Box>
-                  <Box sx={{ 
-                    maxHeight: { xs: 'calc(100vh - 280px)', sm: '400px' },  // 高さを調整
-                    overflowY: 'auto'
-                  }}>
-                    <GroupList groupList={groupList} />
-                  </Box>
-                </Box>
-              )}
-            </StyledPaper>
+              フレンド
+            </StyledButton>
+            <StyledButton
+              variant={isGroupClicked ? 'contained' : 'outlined'}
+              onClick={() => {
+                setIsGroupClicked(true);
+                setIsFriendClicked(false);
+              }}
+              sx={{ 
+                flex: { xs: 1, md: 'auto' },
+                py: 1.5,
+                fontSize: '1rem',
+                justifyContent: 'flex-start',
+                px: 3,
+              }}
+            >
+              グループ
+            </StyledButton>
           </Box>
-        </Container>
+
+          {/* 検索ボタン */}
+          <StyledButton
+            variant="outlined"
+            onClick={handleOpenSearchModal}
+            startIcon={<SearchIcon />}
+            sx={{
+              width: '100%',
+              py: 1.5,
+              justifyContent: 'flex-start',
+              px: 3,
+              display: { xs: 'none', md: 'flex' }
+            }}
+          >
+            検索
+          </StyledButton>
+
+          {/* モバイル用検索ボタン */}
+          <IconButton
+            onClick={handleOpenSearchModal}
+            sx={{
+              display: { xs: 'flex', md: 'none' },
+              position: 'fixed',
+              bottom: 72,
+              right: 16,
+              zIndex: 1000,
+              bgcolor: 'background.paper',
+              boxShadow: 3,
+              '&:hover': {
+                bgcolor: 'action.hover'
+              }
+            }}
+          >
+            <SearchIcon />
+          </IconButton>
+        </Box>
+
+        {/* メインコンテンツ */}
+        <Box sx={{ 
+          flex: 1,
+          p: { xs: 1, sm: 2, md: 3 },
+          maxWidth: { md: '800px' },
+          mx: 'auto',
+          width: '100%'
+        }}>
+          <StyledPaper
+            sx={{
+              height: { xs: 'calc(100vh - 140px)', md: 'calc(100vh - 48px)' },
+              overflow: 'hidden',
+              display: 'flex',
+              flexDirection: 'column'
+            }}
+          >
+            {/* リストヘッダー */}
+            <Box sx={{ 
+              p: 2,
+              borderBottom: 1,
+              borderColor: 'divider',
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center'
+            }}>
+              <Typography variant="h6" component="h2">
+                {isFriendClicked ? 'フレンドリスト' : 'グループリスト'}
+              </Typography>
+              <StyledButton
+                variant="contained"
+                startIcon={isFriendClicked ? <PersonAdd /> : <GroupAdd />}
+                onClick={isFriendClicked ? handleOpenAddFriendModal : handleOpenCreateGroupModal}
+                size="medium"
+              >
+                {isFriendClicked ? 'フレンドを追加' : 'グループを作成'}
+              </StyledButton>
+            </Box>
+
+            {/* リスト表示エリア */}
+            <Box sx={{ 
+              flex: 1,
+              overflow: 'auto',
+              px: 2,
+              py: 1
+            }}>
+              {isFriendClicked && <FriendList friendList={isFriendList} />}
+              {isGroupClicked && <GroupList groupList={groupList} />}
+            </Box>
+          </StyledPaper>
+        </Box>
 
         {/* 検索モーダル */}
         <Dialog
