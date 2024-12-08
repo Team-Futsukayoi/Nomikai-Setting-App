@@ -296,7 +296,7 @@ export const ChatListPage = () => {
         setSearchResults(filteredGroups);
       }
     } catch (error) {
-      console.error('検索中にエラーが発生し��した:', error);
+      console.error('検索中にエラーが発生しました:', error);
       setSearchResults([]);
     } finally {
       setIsSearching(false);
@@ -351,7 +351,11 @@ export const ChatListPage = () => {
       const querySnapshot = await getDocs(q);
 
       if (querySnapshot.empty) {
-        alert('ユーザーが見つかりません');
+        setSnackbar({
+          open: true,
+          message: 'ユーザーが見つかりません',
+          severity: 'error'
+        });
         return;
       }
 
@@ -360,54 +364,77 @@ export const ChatListPage = () => {
 
       // 自分自身をフレンドに追加しようとしていないか確認
       if (friendId === currentUser.uid) {
-        alert('自分自身をフレンドに追加することはできません');
+        setSnackbar({
+          open: true,
+          message: '自分自身をフレンドに追加することはできません',
+          severity: 'warning'
+        });
         return;
       }
 
-      // すでにフレンドかどうか確認（双方向）
+      // すでにフレンドかどうか確認
       const friendsRef = collection(db, 'friends');
+      const friendCheckQuery = query(
+        friendsRef,
+        where('users', 'array-contains-any', [currentUser.uid, friendId])
+      );
       
-      const [snapshot1, snapshot2] = await Promise.all([
-        getDocs(query(
-          friendsRef,
-          where('userId', '==', currentUser.uid),
-          where('friendId', '==', friendId)
-        )),
-        getDocs(query(
-          friendsRef,
-          where('userId', '==', friendId),
-          where('friendId', '==', currentUser.uid)
-        ))
-      ]);
+      const friendSnapshot = await getDocs(friendCheckQuery);
+      const existingFriendship = friendSnapshot.docs.some(doc => {
+        const data = doc.data();
+        return data.users.includes(currentUser.uid) && data.users.includes(friendId);
+      });
 
-      if (!snapshot1.empty || !snapshot2.empty) {
-        alert('すでにフレンドです');
+      if (existingFriendship) {
+        setSnackbar({
+          open: true,
+          message: 'すでにフレンドです',
+          severity: 'warning'
+        });
         return;
       }
 
-      // フレンドを追加（双方向）
-      await Promise.all([
-        addDoc(collection(db, 'friends'), {
-          userId: currentUser.uid,
-          friendId: friendId,
-          createdAt: serverTimestamp(),
-        }),
-        addDoc(collection(db, 'friends'), {
-          userId: friendId,
-          friendId: currentUser.uid,
-          createdAt: serverTimestamp(),
+      // フレンドを追加
+      await addDoc(collection(db, 'friends'), {
+        users: [currentUser.uid, friendId],
+        createdAt: serverTimestamp(),
+      });
+
+      // フレンドリストを更新
+      const friendsData = await Promise.all(
+        friendSnapshot.docs.map(async (doc) => {
+          const friendData = doc.data();
+          const targetId = friendData.users.find(id => id !== currentUser.uid);
+          if (!targetId) return null;
+
+          const userDoc = await getDoc(doc(db, 'users', targetId));
+          if (!userDoc.exists()) return null;
+
+          const userData = userDoc.data();
+          return {
+            id: doc.id,
+            friendId: targetId,
+            username: userData.username,
+            userId: userData.userId,
+            icon: userData.photoURL
+          };
         })
-      ]);
+      );
 
-      // 更新されたフレンドリストを再取得
-      const updatedFriends = await fetchFriendsFromFirestore(currentUser.uid);
-      setIsFriendList(updatedFriends);
-
-      alert('フレンドを追加しました');
+      setIsFriendList(friendsData.filter(friend => friend !== null));
+      setSnackbar({
+        open: true,
+        message: 'フレンドを追加しました',
+        severity: 'success'
+      });
       handleCloseAddFriendModal();
     } catch (error) {
       console.error('フレンド追加中にエラーが発生しました:', error);
-      alert('フレンド追加に失敗しました');
+      setSnackbar({
+        open: true,
+        message: 'フレンド追加に失敗しました',
+        severity: 'error'
+      });
     } finally {
       setIsSubmitting(false);
     }
@@ -488,7 +515,7 @@ export const ChatListPage = () => {
     }
   };
 
-  // メン���ー削除の処理
+  // メンバー削除の処理
   const handleRemoveGroupMember = (memberToRemove) => {
     // 自分（管理者）は削除できない
     if (memberToRemove.isCurrentUser) {
@@ -762,7 +789,7 @@ export const ChatListPage = () => {
           }}
         >
           <DialogTitle>
-            {isFriendClicked ? "フレンドを検索" : "グループを検索"}
+            {isFriendClicked ? "フレン��を検索" : "グループを検索"}
           </DialogTitle>
           <DialogContent>
             <Box sx={{ mt: 2 }}>
