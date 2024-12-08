@@ -263,7 +263,7 @@ export const ChatListPage = () => {
     setIsSearching(true);
     try {
       if (isFriendClicked) {
-        // フレンドリストから検索
+        // フレ��ドリストから検索
         const filteredFriends = isFriendList.filter(friend => {
           if (!friend) return false;
           
@@ -410,7 +410,7 @@ export const ChatListPage = () => {
     }
   };
 
-  // グループ作成モーダルを開く
+  // グ���ープ作成モーダルを開く
   const handleOpenCreateGroupModal = () => {
     // 自分をメンバーとして初期設定
     setGroupMembers([{
@@ -418,7 +418,7 @@ export const ChatListPage = () => {
       userId: currentUser.userId,
       username: currentUser.username,
       role: 'admin',
-      isCurrentUser: true // 自��であることを示すフラグ
+      isCurrentUser: true // 自分であることを示すフラグ
     }]);
     setIsCreateGroupModalOpen(true);
   };
@@ -716,9 +716,9 @@ export const ChatListPage = () => {
                                   },
                                 }}
                               >
-                                {item.members.map((member) => (
+                                {item.members.map((member, index) => (
                                   <Avatar
-                                    key={member.uid}
+                                    key={`${item.id}_${member.uid}_${index}`}
                                     alt={member.userId || member.username}
                                     src={member.icon}
                                   />
