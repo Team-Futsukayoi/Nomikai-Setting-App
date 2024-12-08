@@ -345,7 +345,7 @@ export const ChatListPage = () => {
 
     setIsSubmitting(true);
     try {
-      // ユーザーIDでユーザーを検索
+      // ユーザーIDでユーザー検索
       const usersRef = collection(db, 'users');
       const q = query(usersRef, where('userId', '==', newFriendId.trim()));
       const querySnapshot = await getDocs(q);
@@ -598,17 +598,31 @@ export const ChatListPage = () => {
 
   return (
     <ThemeProvider theme={theme}>
-      <Box sx={{ bgcolor: 'background.default', minHeight: '100vh', py: 4 }}>
-        <Container maxWidth="md">
-          <Box my={4}>
-            {/* ナレンド/グループ切り替えボタンと検索 */}
+      <Box sx={{ 
+        bgcolor: 'background.default', 
+        minHeight: '100vh',
+        py: { xs: 2, sm: 4 }  // スマートフォンでの余白を調整
+      }}>
+        <Container 
+          maxWidth="md"
+          sx={{
+            px: { xs: 1, sm: 2, md: 3 }  // 画面サイズに応じて横幅の余白を調整
+          }}
+        >
+          <Box my={{ xs: 2, sm: 4 }}>
             <Box sx={{ 
               display: 'flex', 
               justifyContent: 'space-between',
               alignItems: 'center',
-              mb: 4 
+              mb: { xs: 2, sm: 4 },
+              flexDirection: { xs: 'column', sm: 'row' },  // スマートフォンでは縦並び
+              gap: { xs: 2, sm: 0 }  // スマートフォンでの要素間の間隔
             }}>
-              <Box sx={{ display: 'flex' }}>
+              <Box sx={{ 
+                display: 'flex',
+                width: { xs: '100%', sm: 'auto' },
+                justifyContent: { xs: 'center', sm: 'flex-start' }
+              }}>
                 <StyledButton
                   variant={isFriendClicked ? 'contained' : 'outlined'}
                   startIcon={<People />}
@@ -616,7 +630,11 @@ export const ChatListPage = () => {
                     setIsFriendClicked(true);
                     setIsGroupClicked(false);
                   }}
-                  sx={{ mr: 2 }}
+                  sx={{ 
+                    mr: 2,
+                    flex: { xs: 1, sm: 'none' },  // スマートフォンでは均等幅
+                    maxWidth: { xs: '160px', sm: 'none' }  // 最大幅を制限
+                  }}
                 >
                   フレンド
                 </StyledButton>
@@ -626,6 +644,10 @@ export const ChatListPage = () => {
                   onClick={() => {
                     setIsGroupClicked(true);
                     setIsFriendClicked(false);
+                  }}
+                  sx={{ 
+                    flex: { xs: 1, sm: 'none' },  // スマートフォンでは均等幅
+                    maxWidth: { xs: '160px', sm: 'none' }  // 最大幅���制限
                   }}
                 >
                   グループ
@@ -639,6 +661,14 @@ export const ChatListPage = () => {
                   '&:hover': {
                     bgcolor: 'action.selected',
                   },
+                  position: { xs: 'fixed', sm: 'static' },  // スマートフォンでは固定位置
+                  bottom: { xs: 72, sm: 'auto' },  // ナビゲーションバーの上に配置
+                  right: { xs: 16, sm: 'auto' },
+                  zIndex: { xs: 1000, sm: 1 },
+                  boxShadow: { 
+                    xs: '0 2px 8px rgba(0,0,0,0.15)', 
+                    sm: 'none' 
+                  }
                 }}
               >
                 <SearchIcon />
@@ -646,35 +676,64 @@ export const ChatListPage = () => {
             </Box>
 
             {/* リスト表示 */}
-            <StyledPaper>
+            <StyledPaper
+              sx={{
+                p: { xs: 1, sm: 2 },  // パディングを調整
+                mb: { xs: 7, sm: 0 }  // スマートフォンでは下部にマージンを追加（ナビゲーションバー対策）
+              }}
+            >
               {isFriendClicked && (
                 <Box>
-                  <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 2 }}>
+                  <Box sx={{ 
+                    display: 'flex', 
+                    justifyContent: 'flex-end', 
+                    mb: 2,
+                    px: { xs: 1, sm: 0 }  // 横パディングを調整
+                  }}>
                     <StyledButton
                       variant="contained"
                       startIcon={<PersonAdd />}
                       onClick={handleOpenAddFriendModal}
+                      size="small"
+                      sx={{
+                        fontSize: { xs: '0.875rem', sm: '1rem' }
+                      }}
                     >
                       フレンドを追加
                     </StyledButton>
                   </Box>
-                  <Box sx={{ maxHeight: '400px', overflowY: 'auto' }}>
+                  <Box sx={{ 
+                    maxHeight: { xs: 'calc(100vh - 280px)', sm: '400px' },  // 高さを調整
+                    overflowY: 'auto' 
+                  }}>
                     <FriendList friendList={isFriendList} />
                   </Box>
                 </Box>
               )}
               {isGroupClicked && (
                 <Box>
-                  <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 2 }}>
+                  <Box sx={{ 
+                    display: 'flex', 
+                    justifyContent: 'flex-end', 
+                    mb: 2,
+                    px: { xs: 1, sm: 0 }  // 横パディングを調整
+                  }}>
                     <StyledButton
                       variant="contained"
                       startIcon={<GroupAdd />}
                       onClick={handleOpenCreateGroupModal}
+                      size="small"
+                      sx={{
+                        fontSize: { xs: '0.875rem', sm: '1rem' }
+                      }}
                     >
                       グループを作成
                     </StyledButton>
                   </Box>
-                  <Box sx={{ maxHeight: '400px', overflowY: 'auto' }}>
+                  <Box sx={{ 
+                    maxHeight: { xs: 'calc(100vh - 280px)', sm: '400px' },  // 高さを調整
+                    overflowY: 'auto'
+                  }}>
                     <GroupList groupList={groupList} />
                   </Box>
                 </Box>
@@ -689,6 +748,12 @@ export const ChatListPage = () => {
           onClose={handleCloseSearchModal}
           maxWidth="sm"
           fullWidth
+          sx={{
+            '& .MuiDialog-paper': {
+              margin: { xs: '16px', sm: '32px' },
+              width: { xs: 'calc(100% - 32px)', sm: '600px' }
+            }
+          }}
         >
           <DialogTitle>
             {isFriendClicked ? "フレンドを検索" : "グループを検索"}
@@ -823,7 +888,7 @@ export const ChatListPage = () => {
           </DialogActions>
         </Dialog>
 
-        {/* グ��ープ作成モーダル */}
+        {/* グループ作成モーダル */}
         <Dialog
           open={isCreateGroupModalOpen}
           onClose={handleCloseCreateGroupModal}
