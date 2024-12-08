@@ -13,6 +13,10 @@ import {
   ListItem,
   ListItemAvatar,
   ListItemText,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
 } from '@mui/material';
 import PersonAdd from '@mui/icons-material/PersonAdd';
 import Groups from '@mui/icons-material/Groups';
@@ -59,6 +63,9 @@ export const ChatListPage = () => {
   const [searchResults, setSearchResults] = useState([]);
   const [isSearching, setIsSearching] = useState(false);
   const navigate = useNavigate();
+  const [isAddFriendModalOpen, setIsAddFriendModalOpen] = useState(false);
+  const [newFriendId, setNewFriendId] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged(async (user) => {
@@ -146,7 +153,7 @@ export const ChatListPage = () => {
         return;
       }
 
-      // フレンドを追加（双方向）
+      // フレンド��追加（双方向）
       await Promise.all([
         // 自分 -> 相手
         addDoc(collection(db, 'friends'), {
@@ -283,6 +290,91 @@ export const ChatListPage = () => {
     return () => clearTimeout(timeoutId);
   }, [searchQuery]);
 
+  // フレンド追加モーダルを開く
+  const handleOpenAddFriendModal = () => {
+    setIsAddFriendModalOpen(true);
+  };
+
+  // フレンド追加モーダルを閉じる
+  const handleCloseAddFriendModal = () => {
+    setIsAddFriendModalOpen(false);
+    setNewFriendId('');
+  };
+
+  // フレンド追加の実行
+  const handleSubmitAddFriend = async () => {
+    if (!newFriendId.trim() || !currentUser) return;
+
+    setIsSubmitting(true);
+    try {
+      // ユーザーIDでユーザーを検索
+      const usersRef = collection(db, 'users');
+      const q = query(usersRef, where('userId', '==', newFriendId.trim()));
+      const querySnapshot = await getDocs(q);
+
+      if (querySnapshot.empty) {
+        alert('ユーザーが見つかりません');
+        return;
+      }
+
+      const friendUser = querySnapshot.docs[0];
+      const friendId = friendUser.id;
+
+      // 自分自身をフレンドに追加しようとしていないか確認
+      if (friendId === currentUser.uid) {
+        alert('自分自身をフレンドに追加することはできません');
+        return;
+      }
+
+      // すでにフレンドかどうか確認（双方向）
+      const friendsRef = collection(db, 'friends');
+      
+      const [snapshot1, snapshot2] = await Promise.all([
+        getDocs(query(
+          friendsRef,
+          where('userId', '==', currentUser.uid),
+          where('friendId', '==', friendId)
+        )),
+        getDocs(query(
+          friendsRef,
+          where('userId', '==', friendId),
+          where('friendId', '==', currentUser.uid)
+        ))
+      ]);
+
+      if (!snapshot1.empty || !snapshot2.empty) {
+        alert('すでにフレンドです');
+        return;
+      }
+
+      // フレンドを追加（双方向）
+      await Promise.all([
+        addDoc(collection(db, 'friends'), {
+          userId: currentUser.uid,
+          friendId: friendId,
+          createdAt: serverTimestamp(),
+        }),
+        addDoc(collection(db, 'friends'), {
+          userId: friendId,
+          friendId: currentUser.uid,
+          createdAt: serverTimestamp(),
+        })
+      ]);
+
+      // 更新されたフレンドリストを再取得
+      const updatedFriends = await fetchFriendsFromFirestore(currentUser.uid);
+      setIsFriendList(updatedFriends);
+
+      alert('フレンドを追加しました');
+      handleCloseAddFriendModal();
+    } catch (error) {
+      console.error('フレンド追加中にエラーが発生しました:', error);
+      alert('フレンド追加に失敗しました');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   if (!userInfo) {
     return (
       <Box
@@ -397,8 +489,19 @@ export const ChatListPage = () => {
             {/* リスト表示 */}
             <StyledPaper>
               {isFriendClicked && (
-                <Box sx={{ maxHeight: '400px', overflowY: 'auto' }}>
-                  <FriendList friendList={isFriendList} />
+                <Box>
+                  <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 2 }}>
+                    <StyledButton
+                      variant="contained"
+                      startIcon={<PersonAdd />}
+                      onClick={handleOpenAddFriendModal}
+                    >
+                      フレンドを追加
+                    </StyledButton>
+                  </Box>
+                  <Box sx={{ maxHeight: '400px', overflowY: 'auto' }}>
+                    <FriendList friendList={isFriendList} />
+                  </Box>
                 </Box>
               )}
               {isGroupClicked && (
@@ -420,6 +523,43 @@ export const ChatListPage = () => {
           </Box>
         </Container>
       </Box>
+
+      {/* フレンド追加モーダル */}
+      <Dialog
+        open={isAddFriendModalOpen}
+        onClose={handleCloseAddFriendModal}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle>フレンドを追加</DialogTitle>
+        <DialogContent>
+          <TextField
+            autoFocus
+            margin="dense"
+            label="ユーザーID"
+            type="text"
+            fullWidth
+            variant="outlined"
+            value={newFriendId}
+            onChange={(e) => setNewFriendId(e.target.value)}
+            placeholder="追加したいユーザーのIDを入力"
+            sx={{ mt: 2 }}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCloseAddFriendModal} color="primary">
+            キャンセル
+          </Button>
+          <Button
+            onClick={handleSubmitAddFriend}
+            color="primary"
+            variant="contained"
+            disabled={isSubmitting || !newFriendId.trim()}
+          >
+            {isSubmitting ? <CircularProgress size={24} /> : '追加'}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </ThemeProvider>
   );
 };
