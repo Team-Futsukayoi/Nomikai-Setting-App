@@ -24,6 +24,7 @@ import {
   IconButton,
   InputAdornment,
   AvatarGroup,
+  Divider,
 } from '@mui/material';
 import PersonAdd from '@mui/icons-material/PersonAdd';
 import Groups from '@mui/icons-material/Groups';
@@ -84,6 +85,7 @@ export const ChatListPage = () => {
     message: '',
     severity: 'success'
   });
+  const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
 
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged(async (user) => {
@@ -126,7 +128,7 @@ export const ChatListPage = () => {
       
       return groups;
     } catch (error) {
-      console.error('グループの取得に失敗しました:', error);
+      console.error('グループ��取得に失敗しました:', error);
       return [];
     }
   };
@@ -263,7 +265,7 @@ export const ChatListPage = () => {
     setIsSearching(true);
     try {
       if (isFriendClicked) {
-        // フレ��ドリストから検索
+        // フレンドリストから検索
         const filteredFriends = isFriendList.filter(friend => {
           if (!friend) return false;
           
@@ -323,6 +325,7 @@ export const ChatListPage = () => {
       // グループチャットへ
       navigate(`/chat/group/${item.id}`);
     }
+    handleCloseSearchModal();
   };
 
   // フレンド追加モーダルを開く
@@ -410,7 +413,7 @@ export const ChatListPage = () => {
     }
   };
 
-  // グ���ープ作成モーダルを開く
+  // グループ作成モーダルを開く
   const handleOpenCreateGroupModal = () => {
     // 自分をメンバーとして初期設定
     setGroupMembers([{
@@ -563,6 +566,20 @@ export const ChatListPage = () => {
     setSnackbar({ ...snackbar, open: false });
   };
 
+  // 検索モーダルを開く
+  const handleOpenSearchModal = () => {
+    setIsSearchModalOpen(true);
+    setSearchQuery('');
+    setSearchResults([]);
+  };
+
+  // 検索モーダルを閉じる
+  const handleCloseSearchModal = () => {
+    setIsSearchModalOpen(false);
+    setSearchQuery('');
+    setSearchResults([]);
+  };
+
   if (!userInfo) {
     return (
       <Box
@@ -584,7 +601,7 @@ export const ChatListPage = () => {
       <Box sx={{ bgcolor: 'background.default', minHeight: '100vh', py: 4 }}>
         <Container maxWidth="md">
           <Box my={4}>
-            {/* ナビゲーション部分 */}
+            {/* ナナー部分 */}
             <StyledPaper sx={{ mb: 4 }}>
               <Box sx={{ 
                 display: 'flex', 
@@ -637,110 +654,14 @@ export const ChatListPage = () => {
                   </StyledButton>
                 </Box>
                 <IconButton 
-                  onClick={() => setSearchQuery(searchQuery ? '' : ' ')} 
+                  onClick={handleOpenSearchModal}
                   color="primary"
                   sx={{ p: 1 }}
                 >
                   <SearchIcon />
                 </IconButton>
               </Box>
-
-              {/* 検索フォーム */}
-              {searchQuery !== null && (
-                <Box sx={{ mt: 2 }}>
-                  <StyledTextField
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    fullWidth
-                    variant="outlined"
-                    placeholder={isFriendClicked ? "フレンドを検索" : "グループを検索"}
-                    InputProps={{
-                      startAdornment: (
-                        <InputAdornment position="start">
-                          <SearchIcon color="action" />
-                        </InputAdornment>
-                      ),
-                    }}
-                  />
-                </Box>
-              )}
             </StyledPaper>
-
-            {/* 検索結果表示エリア */}
-            {searchQuery && searchQuery.trim() && (
-              <StyledPaper sx={{ mb: 4 }}>
-                <Typography variant="h6" sx={{ mb: 2 }}>
-                  検索結果
-                </Typography>
-                {isSearching ? (
-                  <Box sx={{ display: 'flex', justifyContent: 'center', p: 2 }}>
-                    <CircularProgress size={24} />
-                  </Box>
-                ) : searchResults.length > 0 ? (
-                  <List>
-                    {searchResults.map((item) => (
-                      <ListItem
-                        key={isFriendClicked ? item.id : item.id}
-                        sx={{
-                          borderRadius: 1,
-                          mb: 1,
-                          cursor: 'pointer',
-                          '&:hover': {
-                            bgcolor: 'rgba(0, 0, 0, 0.04)',
-                          },
-                        }}
-                        onClick={() => handleChatNavigation(item)}
-                      >
-                        {isFriendClicked ? (
-                          // フレンド検索結果
-                          <>
-                            <ListItemAvatar>
-                              <Avatar src={item.icon} alt={item.userId || item.username} />
-                            </ListItemAvatar>
-                            <ListItemText
-                              primary={item.username || item.userId}
-                              secondary={item.username ? `ID: ${item.userId}` : null}
-                            />
-                          </>
-                        ) : (
-                          // グループ検索結果
-                          <>
-                            <ListItemAvatar>
-                              <AvatarGroup
-                                max={3}
-                                sx={{
-                                  '& .MuiAvatar-root': {
-                                    width: 40,
-                                    height: 40,
-                                    fontSize: '1rem',
-                                  },
-                                }}
-                              >
-                                {item.members.map((member, index) => (
-                                  <Avatar
-                                    key={`${item.id}_${member.uid}_${index}`}
-                                    alt={member.userId || member.username}
-                                    src={member.icon}
-                                  />
-                                ))}
-                              </AvatarGroup>
-                            </ListItemAvatar>
-                            <ListItemText
-                              primary={item.name}
-                              secondary={`${item.members.length}人のメンバー`}
-                            />
-                          </>
-                        )}
-                      </ListItem>
-                    ))}
-                  </List>
-                ) : (
-                  <Typography color="text.secondary" sx={{ p: 2 }}>
-                    {isFriendClicked ? 'フレンドが見つかりません' : 'グループが見つかりません'}
-                  </Typography>
-                )}
-              </StyledPaper>
-            )}
 
             {/* リスト表示 */}
             <StyledPaper>
@@ -779,135 +700,238 @@ export const ChatListPage = () => {
             </StyledPaper>
           </Box>
         </Container>
-      </Box>
 
-      {/* フレンド追加モーダル */}
-      <Dialog
-        open={isAddFriendModalOpen}
-        onClose={handleCloseAddFriendModal}
-        maxWidth="sm"
-        fullWidth
-      >
-        <DialogTitle>フレンドを追加</DialogTitle>
-        <DialogContent>
-          <TextField
-            autoFocus
-            margin="dense"
-            label="ユーザーID"
-            type="text"
-            fullWidth
-            variant="outlined"
-            value={newFriendId}
-            onChange={(e) => setNewFriendId(e.target.value)}
-            placeholder="追加したいユーザーのIDを入力"
-            sx={{ mt: 2 }}
-          />
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={handleCloseAddFriendModal} color="primary">
-            キャンセル
-          </Button>
-          <Button
-            onClick={handleSubmitAddFriend}
-            color="primary"
-            variant="contained"
-            disabled={isSubmitting || !newFriendId.trim()}
-          >
-            {isSubmitting ? <CircularProgress size={24} /> : '追加'}
-          </Button>
-        </DialogActions>
-      </Dialog>
-
-      {/* グループ作成モーダル */}
-      <Dialog
-        open={isCreateGroupModalOpen}
-        onClose={handleCloseCreateGroupModal}
-        maxWidth="sm"
-        fullWidth
-      >
-        <DialogTitle>新しいグループを作成</DialogTitle>
-        <DialogContent>
-          <Stack spacing={3} sx={{ mt: 2 }}>
-            <TextField
-              label="グループ名"
-              value={groupName}
-              onChange={(e) => setGroupName(e.target.value)}
-              fullWidth
-              variant="outlined"
-            />
-            
-            <Box>
+        {/* 検索モーダル */}
+        <Dialog
+          open={isSearchModalOpen}
+          onClose={handleCloseSearchModal}
+          maxWidth="sm"
+          fullWidth
+        >
+          <DialogTitle>
+            {isFriendClicked ? "フレンドを検索" : "グループを検索"}
+          </DialogTitle>
+          <DialogContent>
+            <Box sx={{ mt: 2 }}>
               <TextField
-                label="メンバーのユーザーID"
-                value={memberId}
-                onChange={(e) => setMemberId(e.target.value)}
+                autoFocus
                 fullWidth
-                variant="outlined"
-                onKeyPress={(e) => {
-                  if (e.key === 'Enter') {
-                    e.preventDefault();
-                    handleAddGroupMember();
-                  }
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder={isFriendClicked ? "フレンド名またはIDで検索" : "グループ名またはメンバー名で検索"}
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <SearchIcon color="action" />
+                    </InputAdornment>
+                  ),
                 }}
               />
-              <Button 
-                onClick={handleAddGroupMember}
-                variant="outlined"
-                sx={{ mt: 1 }}
-              >
-                メンバーを追加
-              </Button>
             </Box>
 
-            {groupMembers.length > 0 && (
-              <Box>
-                <Typography variant="subtitle1" gutterBottom>
-                  メンバー:
-                </Typography>
-                <Stack direction="row" spacing={1} flexWrap="wrap">
-                  {groupMembers.map((member) => (
-                    <Chip
-                      key={member.userId}
-                      label={`${member.username}${member.isCurrentUser ? ' (管理者)' : ''}`}
-                      onDelete={member.isCurrentUser ? undefined : () => handleRemoveGroupMember(member)}
-                      color={member.isCurrentUser ? 'primary' : 'default'}
-                      sx={{ m: 0.5 }}
-                    />
-                  ))}
-                </Stack>
+            {isSearching ? (
+              <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
+                <CircularProgress />
               </Box>
-            )}
-          </Stack>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={handleCloseCreateGroupModal} color="primary">
-            キャンセル
-          </Button>
-          <Button
-            onClick={handleCreateGroup}
-            color="primary"
-            variant="contained"
-            disabled={isCreatingGroup || !groupName.trim() || groupMembers.length === 0}
-          >
-            {isCreatingGroup ? <CircularProgress size={24} /> : 'グループを作成'}
-          </Button>
-        </DialogActions>
-      </Dialog>
+            ) : searchResults.length > 0 ? (
+              <List sx={{ mt: 2 }}>
+                {searchResults.map((item) => (
+                  <ListItem
+                    key={isFriendClicked ? item.id : item.id}
+                    sx={{
+                      borderRadius: 1,
+                      mb: 1,
+                      cursor: 'pointer',
+                      '&:hover': {
+                        bgcolor: 'rgba(0, 0, 0, 0.04)',
+                      },
+                    }}
+                    onClick={() => handleChatNavigation(item)}
+                  >
+                    {isFriendClicked ? (
+                      <>
+                        <ListItemAvatar>
+                          <Avatar src={item.icon} alt={item.userId || item.username} />
+                        </ListItemAvatar>
+                        <ListItemText
+                          primary={item.username || item.userId}
+                          secondary={item.username ? `ID: ${item.userId}` : null}
+                        />
+                      </>
+                    ) : (
+                      <>
+                        <ListItemAvatar>
+                          <AvatarGroup
+                            max={3}
+                            sx={{
+                              '& .MuiAvatar-root': {
+                                width: 40,
+                                height: 40,
+                                fontSize: '1rem',
+                              },
+                            }}
+                          >
+                            {item.members.map((member, index) => (
+                              <Avatar
+                                key={`${item.id}_${member.uid}_${index}`}
+                                alt={member.userId || member.username}
+                                src={member.icon}
+                              />
+                            ))}
+                          </AvatarGroup>
+                        </ListItemAvatar>
+                        <ListItemText
+                          primary={item.name}
+                          secondary={`${item.members.length}人のメンバー`}
+                        />
+                      </>
+                    )}
+                  </ListItem>
+                ))}
+              </List>
+            ) : searchQuery ? (
+              <Box sx={{ p: 4, textAlign: 'center' }}>
+                <Typography color="text.secondary">
+                  {isFriendClicked ? 'フレンドが見つかりません' : 'グループが見つかりません'}
+                </Typography>
+              </Box>
+            ) : null}
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={handleCloseSearchModal} color="primary">
+              閉じる
+            </Button>
+          </DialogActions>
+        </Dialog>
 
-      {/* Snackbar */}
-      <Snackbar 
-        open={snackbar.open} 
-        autoHideDuration={6000} 
-        onClose={handleCloseSnackbar}
-      >
-        <Alert 
-          onClose={handleCloseSnackbar} 
-          severity={snackbar.severity}
-          sx={{ width: '100%' }}
+        {/* フレンド追加モーダル */}
+        <Dialog
+          open={isAddFriendModalOpen}
+          onClose={handleCloseAddFriendModal}
+          maxWidth="sm"
+          fullWidth
         >
-          {snackbar.message}
-        </Alert>
-      </Snackbar>
+          <DialogTitle>フレンドを追加</DialogTitle>
+          <DialogContent>
+            <TextField
+              autoFocus
+              margin="dense"
+              label="ユーザーID"
+              type="text"
+              fullWidth
+              variant="outlined"
+              value={newFriendId}
+              onChange={(e) => setNewFriendId(e.target.value)}
+              placeholder="追加したいユーザーのIDを入力"
+              sx={{ mt: 2 }}
+            />
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={handleCloseAddFriendModal} color="primary">
+              キャンセル
+            </Button>
+            <Button
+              onClick={handleSubmitAddFriend}
+              color="primary"
+              variant="contained"
+              disabled={isSubmitting || !newFriendId.trim()}
+            >
+              {isSubmitting ? <CircularProgress size={24} /> : '追加'}
+            </Button>
+          </DialogActions>
+        </Dialog>
+
+        {/* グループ作成モーダル */}
+        <Dialog
+          open={isCreateGroupModalOpen}
+          onClose={handleCloseCreateGroupModal}
+          maxWidth="sm"
+          fullWidth
+        >
+          <DialogTitle>新しいグループを作成</DialogTitle>
+          <DialogContent>
+            <Stack spacing={3} sx={{ mt: 2 }}>
+              <TextField
+                label="グループ名"
+                value={groupName}
+                onChange={(e) => setGroupName(e.target.value)}
+                fullWidth
+                variant="outlined"
+              />
+              
+              <Box>
+                <TextField
+                  label="メンバーのユーザーID"
+                  value={memberId}
+                  onChange={(e) => setMemberId(e.target.value)}
+                  fullWidth
+                  variant="outlined"
+                  onKeyPress={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      handleAddGroupMember();
+                    }
+                  }}
+                />
+                <Button 
+                  onClick={handleAddGroupMember}
+                  variant="outlined"
+                  sx={{ mt: 1 }}
+                >
+                  メンバーを追加
+                </Button>
+              </Box>
+
+              {groupMembers.length > 0 && (
+                <Box>
+                  <Typography variant="subtitle1" gutterBottom>
+                    メンバー:
+                  </Typography>
+                  <Stack direction="row" spacing={1} flexWrap="wrap">
+                    {groupMembers.map((member) => (
+                      <Chip
+                        key={member.userId}
+                        label={`${member.username}${member.isCurrentUser ? ' (管理者)' : ''}`}
+                        onDelete={member.isCurrentUser ? undefined : () => handleRemoveGroupMember(member)}
+                        color={member.isCurrentUser ? 'primary' : 'default'}
+                        sx={{ m: 0.5 }}
+                      />
+                    ))}
+                  </Stack>
+                </Box>
+              )}
+            </Stack>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={handleCloseCreateGroupModal} color="primary">
+              キャンセル
+            </Button>
+            <Button
+              onClick={handleCreateGroup}
+              color="primary"
+              variant="contained"
+              disabled={isCreatingGroup || !groupName.trim() || groupMembers.length === 0}
+            >
+              {isCreatingGroup ? <CircularProgress size={24} /> : 'グループを作成'}
+            </Button>
+          </DialogActions>
+        </Dialog>
+
+        {/* Snackbar */}
+        <Snackbar 
+          open={snackbar.open} 
+          autoHideDuration={6000} 
+          onClose={handleCloseSnackbar}
+        >
+          <Alert 
+            onClose={handleCloseSnackbar} 
+            severity={snackbar.severity}
+            sx={{ width: '100%' }}
+          >
+            {snackbar.message}
+          </Alert>
+        </Snackbar>
+      </Box>
     </ThemeProvider>
   );
 };
