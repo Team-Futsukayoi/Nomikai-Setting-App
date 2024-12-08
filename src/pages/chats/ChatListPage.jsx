@@ -9,6 +9,10 @@ import {
   Paper,
   ThemeProvider,
   CircularProgress,
+  List,
+  ListItem,
+  ListItemAvatar,
+  ListItemText,
 } from '@mui/material';
 import PersonAdd from '@mui/icons-material/PersonAdd';
 import Groups from '@mui/icons-material/Groups';
@@ -27,6 +31,7 @@ import {
   where,
   serverTimestamp,
   limit,
+  or,
 } from 'firebase/firestore';
 import FriendList from './FriendList';
 import GroupList from './GroupList';
@@ -50,6 +55,9 @@ export const ChatListPage = () => {
   const [friendName, setFriendName] = useState('');
   const [userInfo, setUserInfo] = useState(null);
   const [groupList, setGroupList] = useState([]);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState([]);
+  const [isSearching, setIsSearching] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -101,78 +109,70 @@ export const ChatListPage = () => {
     fetchGroups();
   }, [currentUser]);
 
-  const handleAddFriend = async () => {
-    if (friendName.trim() && currentUser) {
-      try {
-        // ユーザーIDでユーザーを検索
-        const usersRef = collection(db, 'users');
-        const q = query(usersRef, where('userId', '==', friendName));
-        const querySnapshot = await getDocs(q);
+  const handleAddFriend = async (targetUser) => {
+    if (!currentUser) return;
 
-        if (querySnapshot.empty) {
-          alert('ユーザーが見つかりません');
-          return;
-        }
-
-        const friendUser = querySnapshot.docs[0];
-        const friendId = friendUser.id;
-
-        // 自分自身をフレンドに追加しようとしていないか確認
-        if (friendId === currentUser.uid) {
-          alert('自分自身をフレンドに追加することはできません');
-          return;
-        }
-
-        // すでにフレンドかどうか確認（双方向）
-        const friendsRef = collection(db, 'friends');
-        
-        // 自分 -> 相手のフレンド関係を確認
-        const friendCheckQuery1 = query(
-          friendsRef,
-          where('userId', '==', currentUser.uid),
-          where('friendId', '==', friendId)
-        );
-        
-        // 相手 -> 自分のフレンド関係を確認
-        const friendCheckQuery2 = query(
-          friendsRef,
-          where('userId', '==', friendId),
-          where('friendId', '==', currentUser.uid)
-        );
-
-        const [snapshot1, snapshot2] = await Promise.all([
-          getDocs(friendCheckQuery1),
-          getDocs(friendCheckQuery2)
-        ]);
-
-        if (!snapshot1.empty || !snapshot2.empty) {
-          alert('すでにフレンドです');
-          return;
-        }
-
-        // フレンドを追加（双方向）
-        await Promise.all([
-          // 自分 -> 相手
-          addDoc(collection(db, 'friends'), {
-            userId: currentUser.uid,
-            friendId: friendId,
-            createdAt: serverTimestamp(),
-          }),
-          // 相手 -> 自分
-          addDoc(collection(db, 'friends'), {
-            userId: friendId,
-            friendId: currentUser.uid,
-            createdAt: serverTimestamp(),
-          })
-        ]);
-
-        setFriendName('');
-        // 更新されたフレンドリストを再取得
-        const updatedFriends = await fetchFriendsFromFirestore(currentUser.uid);
-        setIsFriendList(updatedFriends);
-      } catch (error) {
-        console.error('フレンド追加中にエラーが発生しました:', error);
+    try {
+      // 自分自身をフレンドに追加しようとしていないか確認
+      if (targetUser.id === currentUser.uid) {
+        alert('自分自身をフレンドに追加することはできません');
+        return;
       }
+
+      // すでにフレンドかどうか確認（双方向）
+      const friendsRef = collection(db, 'friends');
+      
+      // 自分 -> 相手のフレンド関係を確認
+      const friendCheckQuery1 = query(
+        friendsRef,
+        where('userId', '==', currentUser.uid),
+        where('friendId', '==', targetUser.id)
+      );
+      
+      // 相手 -> 自分のフレンド関係を確認
+      const friendCheckQuery2 = query(
+        friendsRef,
+        where('userId', '==', targetUser.id),
+        where('friendId', '==', currentUser.uid)
+      );
+
+      const [snapshot1, snapshot2] = await Promise.all([
+        getDocs(friendCheckQuery1),
+        getDocs(friendCheckQuery2)
+      ]);
+
+      if (!snapshot1.empty || !snapshot2.empty) {
+        alert('すでにフレンドです');
+        return;
+      }
+
+      // フレンドを追加（双方向）
+      await Promise.all([
+        // 自分 -> 相手
+        addDoc(collection(db, 'friends'), {
+          userId: currentUser.uid,
+          friendId: targetUser.id,
+          createdAt: serverTimestamp(),
+        }),
+        // 相手 -> 自分
+        addDoc(collection(db, 'friends'), {
+          userId: targetUser.id,
+          friendId: currentUser.uid,
+          createdAt: serverTimestamp(),
+        })
+      ]);
+
+      // 検索結果から追加したユーザーを削除
+      setSearchResults(prev => prev.filter(user => user.id !== targetUser.id));
+      
+      // 更新されたフレンドリストを再取得
+      const updatedFriends = await fetchFriendsFromFirestore(currentUser.uid);
+      setIsFriendList(updatedFriends);
+
+      alert(`${targetUser.username}さんをフレンドに追加しました`);
+    } catch (error) {
+      console.error('フレンド追加中にエラーが発生しました:', error);
+      alert('フレンド追加に失敗しました');
     }
   };
 
@@ -220,6 +220,69 @@ export const ChatListPage = () => {
     }
   };
 
+  // 検索機能
+  const handleSearch = async (searchText) => {
+    if (!searchText.trim()) {
+      setSearchResults([]);
+      return;
+    }
+
+    setIsSearching(true);
+    try {
+      const usersRef = collection(db, 'users');
+      const q = searchText.toLowerCase();
+      
+      // ユーザーIDで検索
+      const idQuery = query(
+        usersRef,
+        where('userId', '>=', q),
+        where('userId', '<=', q + '\uf8ff'),
+        limit(5)
+      );
+
+      // ユーザー名で検索
+      const nameQuery = query(
+        usersRef,
+        where('username', '>=', q),
+        where('username', '<=', q + '\uf8ff'),
+        limit(5)
+      );
+
+      const [idResults, nameResults] = await Promise.all([
+        getDocs(idQuery),
+        getDocs(nameQuery)
+      ]);
+
+      // 結果をマージして重複を除去
+      const results = new Map();
+      [...idResults.docs, ...nameResults.docs].forEach(doc => {
+        if (!results.has(doc.id)) {
+          results.set(doc.id, { id: doc.id, ...doc.data() });
+        }
+      });
+
+      // 自分を除外して配列に変換
+      const filteredResults = Array.from(results.values())
+        .filter(user => user.id !== currentUser.uid);
+
+      setSearchResults(filteredResults);
+    } catch (error) {
+      console.error('検索中にエラーが発生しました:', error);
+      setSearchResults([]);
+    } finally {
+      setIsSearching(false);
+    }
+  };
+
+  // 検索入力のディバウンス処理
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      handleSearch(searchQuery);
+    }, 500);
+
+    return () => clearTimeout(timeoutId);
+  }, [searchQuery]);
+
   if (!userInfo) {
     return (
       <Box
@@ -241,35 +304,70 @@ export const ChatListPage = () => {
       <Box sx={{ bgcolor: 'background.default', minHeight: '100vh', py: 4 }}>
         <Container maxWidth="md">
           <Box my={4}>
-            {/* ユーザー情報表示 */}
+            {/* ユーザー検索フォーム */}
             <StyledPaper sx={{ mb: 4 }}>
-              <Grid container spacing={3} alignItems="center">
-                <Grid item>
-                  <Avatar
-                    src={currentUser?.icon}
-                    alt={currentUser?.username}
-                    sx={{
-                      width: 100,
-                      height: 100,
-                      border: 4,
-                      borderColor: 'primary.main',
-                    }}
+              <Grid container spacing={2} alignItems="center">
+                <Grid item xs={12}>
+                  <StyledTextField
+                    label="ユーザーを検索"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    fullWidth
+                    variant="outlined"
+                    placeholder="ユーザー名またはIDで検索"
                   />
-                </Grid>
-                <Grid item>
-                  <Typography
-                    variant="h4"
-                    fontWeight="bold"
-                    color="text.primary"
-                  >
-                    {currentUser?.username}
-                  </Typography>
-                  <Typography variant="subtitle1" color="text.secondary">
-                    オンライン
-                  </Typography>
                 </Grid>
               </Grid>
             </StyledPaper>
+
+            {/* 検索結果表示エリア */}
+            {searchQuery && (
+              <StyledPaper sx={{ mb: 4 }}>
+                <Typography variant="h6" sx={{ mb: 2 }}>
+                  検索結果
+                </Typography>
+                {isSearching ? (
+                  <Box sx={{ display: 'flex', justifyContent: 'center', p: 2 }}>
+                    <CircularProgress size={24} />
+                  </Box>
+                ) : searchResults.length > 0 ? (
+                  <List>
+                    {searchResults.map((user) => (
+                      <ListItem
+                        key={user.id}
+                        sx={{
+                          borderRadius: 1,
+                          mb: 1,
+                          '&:hover': {
+                            bgcolor: 'rgba(0, 0, 0, 0.04)',
+                          },
+                        }}
+                      >
+                        <ListItemAvatar>
+                          <Avatar src={user.icon} alt={user.username} />
+                        </ListItemAvatar>
+                        <ListItemText
+                          primary={user.username}
+                          secondary={`ID: ${user.userId}`}
+                        />
+                        <StyledButton
+                          variant="contained"
+                          startIcon={<PersonAdd />}
+                          onClick={() => handleAddFriend(user)}
+                          size="small"
+                        >
+                          フレンド追加
+                        </StyledButton>
+                      </ListItem>
+                    ))}
+                  </List>
+                ) : (
+                  <Typography color="text.secondary" sx={{ p: 2 }}>
+                    ユーザーが見つかりませんでした
+                  </Typography>
+                )}
+              </StyledPaper>
+            )}
 
             {/* フレンド/グループ切り替えボタン */}
             <Box sx={{ display: 'flex', justifyContent: 'center', mb: 4 }}>
@@ -295,33 +393,6 @@ export const ChatListPage = () => {
                 グループ
               </StyledButton>
             </Box>
-
-            {/* フレンド追加フォーム */}
-            <StyledPaper sx={{ mb: 4 }}>
-              <Grid container spacing={2} alignItems="center">
-                <Grid item xs={9}>
-                  <StyledTextField
-                    label="ユーザーIDを入力"
-                    value={friendName}
-                    onChange={(e) => setFriendName(e.target.value)}
-                    fullWidth
-                    variant="outlined"
-                    placeholder="新しいフレンドを追加"
-                  />
-                </Grid>
-                <Grid item xs={3}>
-                  <StyledButton
-                    variant="contained"
-                    startIcon={<PersonAdd />}
-                    onClick={handleAddFriend}
-                    fullWidth
-                    sx={{ whiteSpace: 'nowrap' }}
-                  >
-                    追加
-                  </StyledButton>
-                </Grid>
-              </Grid>
-            </StyledPaper>
 
             {/* リスト表示 */}
             <StyledPaper>
