@@ -1,117 +1,134 @@
 import React, { useState } from 'react';
 import {
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
+  Modal,
+  Box,
+  Typography,
   TextField,
   Button,
-  CircularProgress
+  Alert,
 } from '@mui/material';
-import { collection, addDoc, getDocs, query, where, serverTimestamp } from 'firebase/firestore';
+import {
+  collection,
+  query,
+  where,
+  getDocs,
+  addDoc,
+  doc,
+  getDoc,
+} from 'firebase/firestore';
 import { db } from '../../firebaseConfig';
 
-export const AddFriendModal = ({ open, onClose, currentUser, onFriendAdded }) => {
-  const [newFriendId, setNewFriendId] = useState('');
-  const [isSubmitting, setIsSubmitting] = useState(false);
+export const AddFriendModal = ({
+  open,
+  onClose,
+  currentUser,
+  onFriendAdded,
+}) => {
+  const [username, setUsername] = useState('');
+  const [error, setError] = useState('');
 
-  const handleSubmit = async () => {
-    if (!newFriendId.trim() || !currentUser) return;
-
-    setIsSubmitting(true);
+  const handleAddFriend = async () => {
     try {
+      if (!username.trim()) return;
+
+      // ユーザー名で検索
       const usersRef = collection(db, 'users');
-      const q = query(usersRef, where('userId', '==', newFriendId.trim()));
+      const q = query(usersRef, where('username', '==', username.trim()));
       const querySnapshot = await getDocs(q);
 
       if (querySnapshot.empty) {
-        alert('ユーザーが見つかりません');
+        setError('ユーザーが見つかりません');
         return;
       }
 
-      const friendUser = querySnapshot.docs[0];
-      const friendId = friendUser.id;
+      const friendDoc = querySnapshot.docs[0];
+      const friendId = friendDoc.id;
 
+      // 自分自身は追加できない
       if (friendId === currentUser.uid) {
-        alert('自分自身をフレンドに追加することはできません');
+        setError('自分自身をフレンドに追加することはできません');
         return;
       }
 
-      // フレンド関係の確認と追加
+      // すでにフレンドかチェック
       const friendsRef = collection(db, 'friends');
-      const [snapshot1, snapshot2] = await Promise.all([
-        getDocs(query(
-          friendsRef,
-          where('userId', '==', currentUser.uid),
-          where('friendId', '==', friendId)
-        )),
-        getDocs(query(
-          friendsRef,
-          where('userId', '==', friendId),
-          where('friendId', '==', currentUser.uid)
-        ))
-      ]);
+      const friendCheckQuery = query(
+        friendsRef,
+        where('userId', '==', currentUser.uid),
+        where('friendId', '==', friendId)
+      );
+      const friendCheckSnapshot = await getDocs(friendCheckQuery);
 
-      if (!snapshot1.empty || !snapshot2.empty) {
-        alert('すでにフレンドです');
+      if (!friendCheckSnapshot.empty) {
+        setError('すでにフレンドに追加されています');
         return;
       }
 
-      // フレンド追加
-      await Promise.all([
-        addDoc(collection(db, 'friends'), {
-          userId: currentUser.uid,
-          friendId: friendId,
-          createdAt: serverTimestamp(),
-        }),
-        addDoc(collection(db, 'friends'), {
-          userId: friendId,
-          friendId: currentUser.uid,
-          createdAt: serverTimestamp(),
-        })
-      ]);
+      // フレンドを追加
+      await addDoc(collection(db, 'friends'), {
+        userId: currentUser.uid,
+        friendId: friendId,
+        createdAt: new Date(),
+      });
 
       onFriendAdded();
+      setUsername('');
+      setError('');
       onClose();
     } catch (error) {
       console.error('フレンド追加エラー:', error);
-      alert('フレンド追加に失敗しました');
-    } finally {
-      setIsSubmitting(false);
-      setNewFriendId('');
+      setError('フレンドの追加に失敗しました');
     }
   };
 
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
-      <DialogTitle>フレンドを追加</DialogTitle>
-      <DialogContent>
+    <Modal open={open} onClose={onClose}>
+      <Box
+        sx={{
+          position: 'absolute',
+          top: '50%',
+          left: '50%',
+          transform: 'translate(-50%, -50%)',
+          width: 300,
+          bgcolor: 'background.paper',
+          boxShadow: '0 8px 32px rgba(0, 0, 0, 0.08)',
+          p: 4,
+          borderRadius: 3,
+          outline: 'none',
+        }}
+      >
+        <Typography variant="h6" sx={{ mb: 3, fontWeight: 600, color: '#333' }}>
+          フレンドを追加
+        </Typography>
+        {error && (
+          <Alert severity="error" sx={{ mb: 2 }}>
+            {error}
+          </Alert>
+        )}
         <TextField
-          autoFocus
-          margin="dense"
-          label="ユーザーID"
-          type="text"
           fullWidth
+          label="ユーザー名"
           variant="outlined"
-          value={newFriendId}
-          onChange={(e) => setNewFriendId(e.target.value)}
-          placeholder="追加したいユーザーのIDを入力"
-          sx={{ mt: 2 }}
+          value={username}
+          onChange={(e) => setUsername(e.target.value)}
+          sx={{ mb: 3 }}
         />
-      </DialogContent>
-      <DialogActions>
-        <Button onClick={onClose} color="primary">
-          キャンセル
-        </Button>
         <Button
-          onClick={handleSubmit}
-          color="primary"
+          fullWidth
           variant="contained"
-          disabled={isSubmitting || !newFriendId.trim()}
+          sx={{
+            bgcolor: '#FFD700',
+            color: 'white',
+            py: 1.5,
+            '&:hover': {
+              bgcolor: '#FFC400',
+            },
+          }}
+          onClick={handleAddFriend}
         >
-          {isSubmitting ? <CircularProgress size={24} /> : '追加'}
+          追加
         </Button>
-      </DialogActions>
-    </Dialog>
+      </Box>
+    </Modal>
   );
-}; 
+};
