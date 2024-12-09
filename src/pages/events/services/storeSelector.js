@@ -49,6 +49,7 @@ async function getGroupMembers(groupId) {
 
 export async function selectStore(timeSlot, groupId) {
   try {
+    console.log('店舗選択開始:', { timeSlot, groupId });
     // Google Maps APIが読み込まれているかチェック
     if (!window.google?.maps?.places) {
       throw new Error('Google Maps APIが読み込まれていません');
@@ -246,10 +247,11 @@ export async function selectStore(timeSlot, groupId) {
     );
 
     if (filteredPlaces.length === 0) {
-      throw new Error(
-        '指定された時間帯で営業している店舗が見つかりません。時間帯を変更してお試しください。'
-      );
+      console.error('利用可能な店舗が見つかりません');
+      throw new Error('利用可能な店舗が見つかりません');
     }
+
+    console.log('利用可能な店舗:', filteredPlaces);
 
     // 8. スコアリングと選択
     const scoredPlaces = filteredPlaces.map((place) => ({

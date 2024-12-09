@@ -4,8 +4,8 @@ const navbarStyles = {
     bottom: 16,
     left: 0,
     right: 0,
-    padding: '0 16px',
     zIndex: 1000,
+    bgcolor: 'transparent',
   },
   navigation: {
     position: 'relative',

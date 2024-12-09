@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { db } from '../../firebaseConfig';
 import {
   collection,
@@ -11,6 +11,7 @@ import {
   serverTimestamp,
   doc,
   getDoc,
+  setDoc,
 } from 'firebase/firestore';
 import {
   Box,
@@ -22,6 +23,10 @@ import {
   Container,
   ThemeProvider,
   AvatarGroup,
+  Collapse,
+  Fab,
+  Tooltip,
+  CircularProgress,
 } from '@mui/material';
 import SendRoundedIcon from '@mui/icons-material/SendRounded';
 import ArrowBackIosNewRoundedIcon from '@mui/icons-material/ArrowBackIosNewRounded';
@@ -29,7 +34,13 @@ import { useAuth } from '../../hooks/useAuth';
 import theme from '../../styles/theme';
 import { format } from 'date-fns';
 import { ja } from 'date-fns/locale';
+import GroupEvent from '../events/components/GroupEventPreview';
 import EventGenerationTest from '../events/tests/EventGenerationTest';
+import GroupEventPreview from '../events/components/GroupEventPreview';
+import { generateEvent } from '../events/services/eventGenerator';
+import { getLoader } from '../events/api/googlePlacesApi';
+import AddIcon from '@mui/icons-material/Add';
+import GroupEventDetail from '../events/components/GroupEventDetail';
 
 function GroupChatPage() {
   const [messages, setMessages] = useState([]);
@@ -38,6 +49,11 @@ function GroupChatPage() {
   const { currentUser } = useAuth();
   const [groupInfo, setGroupInfo] = useState(null);
   const messagesEndRef = useRef(null);
+  const [groupEvent, setGroupEvent] = useState(null);
+  const [isEventExpanded, setIsEventExpanded] = useState(false);
+  const navigate = useNavigate();
+  const [mapsLoaded, setMapsLoaded] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   // グループ情報とメッセージの取得
   useEffect(() => {
@@ -81,7 +97,23 @@ function GroupChatPage() {
       }
     );
 
-    return () => unsubscribe();
+    // イベント情報を取得
+    const fetchGroupEvent = async () => {
+      if (!groupId) return;
+
+      const eventRef = doc(db, 'groups', groupId, 'events', 'current');
+      const eventSnap = await getDoc(eventRef);
+
+      if (eventSnap.exists()) {
+        setGroupEvent(eventSnap.data());
+      }
+    };
+
+    fetchGroupEvent();
+
+    return () => {
+      unsubscribe();
+    };
   }, [currentUser, groupId]);
 
   // 自動スクロール
@@ -90,6 +122,20 @@ function GroupChatPage() {
       messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
     }
   }, [messages]);
+
+  // Google Maps APIの初期化
+  useEffect(() => {
+    const initGoogleMaps = async () => {
+      try {
+        await getLoader().load();
+        setMapsLoaded(true);
+      } catch (error) {
+        console.error('Google Maps API初期化エラー:', error);
+      }
+    };
+
+    initGoogleMaps();
+  }, []);
 
   const sendMessage = async (e) => {
     e.preventDefault();
@@ -111,6 +157,60 @@ function GroupChatPage() {
     }
   };
 
+  const handleToggleEvent = () => {
+    setIsEventExpanded(!isEventExpanded);
+  };
+
+  // イベントの取得処理
+  useEffect(() => {
+    if (!groupId) return;
+
+    const eventRef = doc(db, 'groups', groupId, 'events', 'current');
+    const unsubscribe = onSnapshot(eventRef, (doc) => {
+      if (doc.exists()) {
+        console.log('取得したイベントデータ:', doc.data()); // デバッグ用
+        setGroupEvent(doc.data());
+      } else {
+        setGroupEvent(null);
+      }
+    });
+
+    return () => unsubscribe();
+  }, [groupId]);
+
+  // イベント生成処理
+  const handleGenerateEvent = async () => {
+    if (loading) return;
+    setLoading(true);
+
+    try {
+      const commonTimeSlots = ['evening', 'night', 'latenight'];
+      const result = await generateEvent(commonTimeSlots, groupId);
+
+      const eventRef = doc(db, 'groups', groupId, 'events', 'current');
+      const today = new Date();
+      const formattedDate = format(today, 'yyyy/MM/dd');
+
+      console.log('保存する日付:', formattedDate); // デバッグ用
+
+      await setDoc(
+        eventRef,
+        {
+          store: result.store,
+          timeSlot: result.timeSlot,
+          date: formattedDate, // 日付を文字列として保存
+          participants: {},
+          createdAt: serverTimestamp(),
+        },
+        { merge: false }
+      );
+    } catch (error) {
+      console.error('イベント生成エラー:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <ThemeProvider theme={theme}>
       <Box
@@ -119,82 +219,54 @@ function GroupChatPage() {
           minHeight: '100vh',
           display: 'flex',
           flexDirection: 'column',
-          pb: '72px',
-          pt: '132px',
         }}
       >
-        {/* ヘッダー */}
-        <Paper
-          elevation={0}
+        {/* ヘャットヘッダー */}
+        <Box
           sx={{
             position: 'fixed',
-            width: '100%',
-            top: '56px',
-            zIndex: 1,
+            top: 56,
+            left: 0,
+            right: 0,
+            bgcolor: 'white',
+            zIndex: 100,
             borderRadius: '0 0 24px 24px',
-            background: 'rgba(255, 255, 255, 0.95)',
-            backdropFilter: 'blur(10px)',
-            '&::before': {
-              content: '""',
-              position: 'absolute',
-              top: '-100px',
-              left: 0,
-              right: 0,
-              height: '100px',
-              background: 'inherit',
-            },
+            boxShadow: '0 2px 4px rgba(0,0,0,0.05)',
           }}
         >
-          <Box
-            sx={{
-              display: 'flex',
-              alignItems: 'center',
-              p: 2,
-              gap: 2,
-            }}
-          >
-            <IconButton
-              onClick={() => window.history.back()}
-              sx={{ color: 'primary.main' }}
-            >
+          <Box sx={{ p: 2, display: 'flex', alignItems: 'center', gap: 2 }}>
+            <IconButton onClick={() => navigate(-1)}>
               <ArrowBackIosNewRoundedIcon />
             </IconButton>
-            <AvatarGroup max={3} sx={{ mr: 1 }}>
-              {groupInfo?.members?.map((member) => (
-                <Avatar
-                  key={member.uid}
-                  alt={member.username}
-                  sx={{
-                    width: 44,
-                    height: 44,
-                    border: 2,
-                    borderColor: 'primary.light',
-                  }}
-                />
-              ))}
-            </AvatarGroup>
-            <Box>
-              <Typography
-                variant="subtitle1"
-                sx={{
-                  fontWeight: 600,
-                  color: 'text.primary',
-                }}
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <AvatarGroup
+                max={2}
+                sx={{ '& .MuiAvatar-root': { width: 32, height: 32 } }}
               >
-                {groupInfo?.name || 'グループチャット'}
-              </Typography>
-              <Typography variant="caption" sx={{ color: 'text.secondary' }}>
-                {groupInfo?.members?.length || 0}人のメンバー
-              </Typography>
+                {groupInfo?.members?.map((member) => (
+                  <Avatar
+                    key={member.uid}
+                    alt={member.username}
+                    sx={{
+                      width: 44,
+                      height: 44,
+                      border: 2,
+                      borderColor: 'primary.light',
+                    }}
+                  />
+                ))}
+              </AvatarGroup>
+              <Box>
+                <Typography variant="subtitle1" sx={{ fontWeight: 'medium' }}>
+                  {groupInfo?.name || 'グループチャット'}
+                </Typography>
+                <Typography variant="caption" color="text.secondary">
+                  {groupInfo?.members?.length || 0}人のメンバー
+                </Typography>
+              </Box>
             </Box>
           </Box>
-          <Container maxWidth="sm" sx={{ py: 2 }}>
-            <EventGenerationTest
-              groupId={groupId}
-              members={groupInfo?.members || []}
-            />
-          </Container>
-        </Paper>
+        </Box>
 
         {/* メッセージエリア */}
         <Box
@@ -202,12 +274,9 @@ function GroupChatPage() {
             flex: 1,
             overflowY: 'auto',
             p: 2,
-            display: 'flex',
-            flexDirection: 'column',
-            gap: 1.5,
-            mb: '72px',
-            maxHeight: 'calc(100vh - 100px)',
-            WebkitOverflowScrolling: 'touch',
+            mt: '136px',
+            mb: '200px',
+            zIndex: 1,
           }}
         >
           {messages.map((message) => (
@@ -280,65 +349,107 @@ function GroupChatPage() {
           <div ref={messagesEndRef} />
         </Box>
 
-        {/* 入力エリア */}
-        <Paper
-          component="form"
-          onSubmit={sendMessage}
-          elevation={0}
-          sx={{
-            p: 2,
-            bgcolor: 'white',
-            borderRadius: '24px 24px 0 0',
-            display: 'flex',
-            gap: 1,
-            alignItems: 'center',
-            position: 'fixed',
-            bottom: '80px',
-            left: 0,
-            right: 0,
-            transition: 'transform 0.3s ease-in-out',
-            '@media (max-height: 400px)': {
-              position: 'static',
-            },
-          }}
-        >
-          <TextField
-            fullWidth
-            value={newMessage}
-            onChange={(e) => setNewMessage(e.target.value)}
-            placeholder="メッセージを入力"
-            variant="outlined"
-            multiline
-            maxRows={4}
+        {/* イベントコンポーネント */}
+        {groupEvent && (
+          <Box
             sx={{
-              '& .MuiOutlinedInput-root': {
-                borderRadius: '16px',
-                bgcolor: '#F5F5F5',
-                '& fieldset': {
-                  border: 'none',
-                },
-              },
-            }}
-          />
-          <IconButton
-            type="submit"
-            disabled={!newMessage.trim()}
-            sx={{
-              bgcolor: 'primary.main',
-              color: 'white',
-              width: 48,
-              height: 48,
-              '&:hover': {
-                bgcolor: 'primary.dark',
-              },
-              '&.Mui-disabled': {
-                bgcolor: 'action.disabledBackground',
-              },
+              position: 'fixed',
+              bottom: 144, // チャット入力との基本的な間隔
+              left: '50%',
+              transform: 'translateX(-50%)',
+              width: '92%',
+              maxWidth: '450px',
+              zIndex: 2,
+              mb: 3, // コメント入力セクションとの追加の余白
             }}
           >
-            <SendRoundedIcon />
-          </IconButton>
-        </Paper>
+            <Collapse in={isEventExpanded}>
+              <GroupEventDetail
+                event={groupEvent}
+                groupId={groupId}
+                onClose={() => setIsEventExpanded(false)}
+              />
+            </Collapse>
+            <GroupEventPreview
+              event={groupEvent}
+              isExpanded={isEventExpanded}
+              onToggle={handleToggleEvent}
+              sx={{ mb: 2 }} // プレビューコンポーネント自体にも余白を追加
+            />
+          </Box>
+        )}
+
+        {/* コメント入力セクション */}
+        <Box
+          sx={{
+            position: 'fixed',
+            bottom: 72, // ナビゲーションバーとの間隔
+            left: 0,
+            right: 0,
+            bgcolor: 'background.paper',
+          }}
+        >
+          <Paper
+            component="form"
+            onSubmit={sendMessage}
+            elevation={0}
+            sx={{
+              p: 2,
+              bgcolor: 'white',
+              borderRadius: '24px',
+              display: 'flex',
+              gap: 1,
+              alignItems: 'center',
+              position: 'fixed',
+              bottom: 84,
+              left: 16,
+              right: 16,
+              zIndex: 3,
+              mx: 'auto',
+              maxWidth: 'calc(100% - 32px)',
+            }}
+          >
+            <TextField
+              fullWidth
+              variant="standard"
+              placeholder="メッセージを入力"
+              value={newMessage}
+              onChange={(e) => setNewMessage(e.target.value)}
+              InputProps={{
+                disableUnderline: true,
+              }}
+              sx={{
+                bgcolor: 'grey.100',
+                borderRadius: 3,
+                px: 2,
+                py: 1,
+              }}
+            />
+            <IconButton type="submit" color="primary">
+              <SendRoundedIcon />
+            </IconButton>
+          </Paper>
+        </Box>
+
+        {/* イベント生成ボタン */}
+        <Tooltip title="イベントを生成">
+          <Fab
+            color="primary"
+            sx={{
+              position: 'fixed',
+              right: 24,
+              bottom: 96,
+              bgcolor: 'warning.main',
+              '&:hover': {
+                bgcolor: 'warning.dark',
+              },
+            }}
+            onClick={handleGenerateEvent}
+            disabled={loading}
+          >
+            {loading ? <CircularProgress size={24} /> : <AddIcon />}
+          </Fab>
+        </Tooltip>
       </Box>
     </ThemeProvider>
   );
