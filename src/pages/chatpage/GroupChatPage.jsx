@@ -215,23 +215,26 @@ function GroupChatPage() {
     <ThemeProvider theme={theme}>
       <Box
         sx={{
-          bgcolor: '#F5F5F5',
+          bgcolor: '#EAEAEA',
           minHeight: '100vh',
           display: 'flex',
           flexDirection: 'column',
         }}
       >
-        {/* ヘャットヘッダー */}
+        {/* ヘッダー */}
         <Box
           sx={{
             position: 'fixed',
             top: 56,
             left: 0,
             right: 0,
-            bgcolor: 'white',
+            background:
+              'linear-gradient(135deg, rgba(255,255,255,0.9), rgba(255,255,255,0.7))',
+            backdropFilter: 'blur(10px)',
+            borderBottom: '1px solid rgba(255,255,255,0.3)',
+            boxShadow: '0 4px 30px rgba(0, 0, 0, 0.1)',
             zIndex: 100,
             borderRadius: '0 0 24px 24px',
-            boxShadow: '0 2px 4px rgba(0,0,0,0.05)',
           }}
         >
           <Box sx={{ p: 2, display: 'flex', alignItems: 'center', gap: 2 }}>
@@ -316,10 +319,10 @@ function GroupChatPage() {
                   sx={{
                     p: 1.5,
                     px: 2,
-                    bgcolor:
+                    background:
                       message.userId === currentUser.uid
-                        ? 'primary.main'
-                        : 'white',
+                        ? 'linear-gradient(135deg, #FFD700, #FFC400)'
+                        : 'linear-gradient(135deg, #FFFFFF, #F5F5F5)',
                     color:
                       message.userId === currentUser.uid
                         ? 'white'
@@ -329,6 +332,14 @@ function GroupChatPage() {
                         ? '20px 20px 0 20px'
                         : '20px 20px 20px 0',
                     wordBreak: 'break-word',
+                    boxShadow: '0 4px 15px rgba(0, 0, 0, 0.05)',
+                    backdropFilter: 'blur(10px)',
+                    border: '1px solid rgba(255,255,255,0.3)',
+                    transition: 'all 0.3s ease',
+                    '&:hover': {
+                      transform: 'translateY(-2px)',
+                      boxShadow: '0 6px 20px rgba(0, 0, 0, 0.08)',
+                    },
                   }}
                 >
                   <Typography variant="body1">{message.text}</Typography>
@@ -354,13 +365,13 @@ function GroupChatPage() {
           <Box
             sx={{
               position: 'fixed',
-              bottom: 144, // チャット入力との基本的な間隔
+              bottom: 144,
               left: '50%',
               transform: 'translateX(-50%)',
               width: '92%',
               maxWidth: '450px',
               zIndex: 2,
-              mb: 3, // コメント入力セクションとの追加の余白
+              mb: 3,
             }}
           >
             <Collapse in={isEventExpanded}>
@@ -374,7 +385,7 @@ function GroupChatPage() {
               event={groupEvent}
               isExpanded={isEventExpanded}
               onToggle={handleToggleEvent}
-              sx={{ mb: 2 }} // プレビューコンポーネント自体にも余白を追加
+              sx={{ mb: 2 }}
             />
           </Box>
         )}
@@ -383,7 +394,7 @@ function GroupChatPage() {
         <Box
           sx={{
             position: 'fixed',
-            bottom: 72, // ナビゲーションバーとの間隔
+            bottom: 72,
             left: 0,
             right: 0,
             bgcolor: 'background.paper',
@@ -395,18 +406,19 @@ function GroupChatPage() {
             elevation={0}
             sx={{
               p: 2,
-              bgcolor: 'white',
-              borderRadius: '24px',
+              background:
+                'linear-gradient(135deg, rgba(255,255,255,0.9), rgba(255,255,255,0.7))',
+              backdropFilter: 'blur(10px)',
+              borderTop: '1px solid rgba(255,255,255,0.3)',
+              borderRadius: '24px 24px 0 0',
               display: 'flex',
               gap: 1,
               alignItems: 'center',
               position: 'fixed',
-              bottom: 84,
-              left: 16,
-              right: 16,
-              zIndex: 3,
-              mx: 'auto',
-              maxWidth: 'calc(100% - 32px)',
+              bottom: '80px',
+              left: 0,
+              right: 0,
+              boxShadow: '0 -4px 30px rgba(0, 0, 0, 0.05)',
             }}
           >
             <TextField
@@ -417,39 +429,57 @@ function GroupChatPage() {
               onChange={(e) => setNewMessage(e.target.value)}
               InputProps={{
                 disableUnderline: true,
-              }}
-              sx={{
-                bgcolor: 'grey.100',
-                borderRadius: 3,
-                px: 2,
-                py: 1,
+                sx: {
+                  bgcolor: 'rgba(245, 245, 245, 0.8)',
+                  borderRadius: '16px',
+                  px: 2,
+                  py: 1,
+                  '&:hover': {
+                    bgcolor: 'rgba(245, 245, 245, 0.9)',
+                  },
+                },
               }}
             />
-            <IconButton type="submit" color="primary">
+            <IconButton
+              type="submit"
+              disabled={!newMessage.trim()}
+              sx={{
+                background: 'linear-gradient(135deg, #FFD700, #FFC400)',
+                color: 'white',
+                width: 48,
+                height: 48,
+                borderRadius: '50%',
+                '&:hover': {
+                  background: 'linear-gradient(135deg, #FFC400, #FFB300)',
+                  transform: 'scale(1.05)',
+                },
+                transition: 'all 0.3s ease',
+              }}
+            >
               <SendRoundedIcon />
             </IconButton>
           </Paper>
         </Box>
 
         {/* イベント生成ボタン */}
-        <Tooltip title="イベントを生成">
-          <Fab
-            color="primary"
-            sx={{
-              position: 'fixed',
-              right: 24,
-              bottom: 96,
-              bgcolor: 'warning.main',
-              '&:hover': {
-                bgcolor: 'warning.dark',
-              },
-            }}
-            onClick={handleGenerateEvent}
-            disabled={loading}
-          >
-            {loading ? <CircularProgress size={24} /> : <AddIcon />}
-          </Fab>
-        </Tooltip>
+        {/* <Tooltip title="イベントを生成"> */}
+        {/* <Fab */}
+        {/* color="primary" */}
+        {/* sx={{ */}
+        {/* position: 'fixed', */}
+        {/* right: 24, */}
+        {/* bottom: 96, */}
+        {/* bgcolor: 'warning.main', */}
+        {/* '&:hover': { */}
+        {/* bgcolor: 'warning.dark', */}
+        {/* }, */}
+        {/* }} */}
+        {/* onClick={handleGenerateEvent} */}
+        {/* disabled={loading} */}
+        {/* > */}
+        {/* {loading ? <CircularProgress size={24} /> : <AddIcon />} */}
+        {/* </Fab> */}
+        {/* </Tooltip> */}
       </Box>
     </ThemeProvider>
   );
