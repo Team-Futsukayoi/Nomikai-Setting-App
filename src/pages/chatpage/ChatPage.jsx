@@ -20,7 +20,6 @@ import {
   IconButton,
   Avatar,
   Paper,
-  Container,
   ThemeProvider,
 } from '@mui/material';
 import SendRoundedIcon from '@mui/icons-material/SendRounded';
@@ -39,27 +38,23 @@ function ChatPage() {
   const messagesEndRef = useRef(null);
 
   useEffect(() => {
-    console.log('Debug - currentUser:', currentUser?.uid);
-    console.log('Debug - friendId:', friendId);
-    
     if (currentUser && friendId) {
       const cleanFriendId = friendId.split('_').pop() || friendId;
-      console.log('Debug - Clean friendId:', cleanFriendId);
-
       // フレンド情報を取得
       const friendRef = doc(db, 'users', cleanFriendId);
       getDoc(friendRef)
         .then((docSnap) => {
-          console.log('Debug - Friend doc exists:', docSnap.exists());
           if (docSnap.exists()) {
             const friendData = docSnap.data();
-            console.log('Debug - Friend data:', friendData);
             setFriendInfo(friendData);
           } else {
             console.error('フレンド情報が見つかりません。ID:', cleanFriendId);
             // Firestoreのusersコレクションの内容を確認
-            getDocs(collection(db, 'users')).then(snapshot => {
-              console.log('Available users:', snapshot.docs.map(d => ({ id: d.id, ...d.data() })));
+            getDocs(collection(db, 'users')).then((snapshot) => {
+              console.log(
+                'Available users:',
+                snapshot.docs.map((d) => ({ id: d.id, ...d.data() }))
+              );
             });
           }
         })
@@ -80,31 +75,16 @@ function ChatPage() {
         console.log('Debug - First message details:', {
           messageData: firstMessage,
           participantsType: typeof firstMessage?.participants,
-          participantsContent: firstMessage?.participants
+          participantsContent: firstMessage?.participants,
         });
-        
+
         const fetchedMessages = querySnapshot.docs
           .map((doc) => ({
             id: doc.id,
             ...doc.data(),
           }))
-          .filter(msg => {
+          .filter((msg) => {
             const participants = msg.participants;
-            
-            // デバッグ用に実際の値を表示
-            console.log('Debug - Message filtering:', {
-              messageId: msg.id,
-              text: msg.text,
-              participants,
-              currentUser: currentUser.uid,
-              cleanFriendId: cleanFriendId,
-              senderId: msg.userId,
-              matchInfo: {
-                hasCurrentUser: participants.includes(currentUser.uid),
-                hasCleanFriendId: participants.includes(cleanFriendId),
-                participantsCount: participants.length
-              }
-            });
 
             // 1対1のチャットメッセージのみをフィルタリング
             return (
@@ -113,8 +93,6 @@ function ChatPage() {
               participants.includes(cleanFriendId)
             );
           });
-        
-        console.log('Debug - Filtered messages:', fetchedMessages);
         setMessages(fetchedMessages);
       });
 
@@ -123,9 +101,12 @@ function ChatPage() {
   }, [currentUser, friendId]);
 
   useEffect(() => {
-    if (messagesEndRef.current) {
-      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
-    }
+    const scrollToBottom = () => {
+      if (messagesEndRef.current) {
+        messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+      }
+    };
+    scrollToBottom();
   }, [messages]);
 
   const sendMessage = async (e) => {
@@ -140,8 +121,6 @@ function ChatPage() {
         userId: currentUser.uid,
         participants: [currentUser.uid, cleanFriendId].sort(),
       };
-
-      console.log('Debug - Sending message:', messageData);
       await addDoc(collection(db, 'messages'), messageData);
 
       setNewMessage('');
@@ -154,17 +133,17 @@ function ChatPage() {
     <ThemeProvider theme={theme}>
       <Box
         sx={{
-          bgcolor: '#F5F5F5',
+          bgcolor: '#EAEAEA',
           minHeight: '100vh',
           display: 'flex',
           flexDirection: 'column',
           pb: '72px',
-          pt: '132px',
+          pt: '60px',
         }}
       >
         {/* ヘッダー */}
         <Paper
-          elevation={0}
+          elevation={3}
           sx={{
             position: 'fixed',
             width: '100%',
@@ -173,16 +152,6 @@ function ChatPage() {
             borderRadius: '0 0 24px 24px',
             background: 'rgba(255, 255, 255, 0.95)',
             backdropFilter: 'blur(10px)',
-            // iOSでのスクロールバウンス時の背景表示を防ぐ
-            '&::before': {
-              content: '""',
-              position: 'absolute',
-              top: '-100px',
-              left: 0,
-              right: 0,
-              height: '100px',
-              background: 'inherit',
-            },
           }}
         >
           <Box
@@ -232,12 +201,13 @@ function ChatPage() {
             flex: 1,
             overflowY: 'auto',
             p: 2,
+            pt: '56px', // ヘッダーの高さに合わせる
+            pb: '36px', // 入力エリアの高さに合わせる
             display: 'flex',
             flexDirection: 'column',
             gap: 1.5,
             mb: '72px',
-            maxHeight: 'calc(100vh - 100px)',
-            // iOS用のスロールバウンス対策
+            maxHeight: 'calc(100vh - 192px)',
             WebkitOverflowScrolling: 'touch',
           }}
         >
@@ -262,7 +232,7 @@ function ChatPage() {
                 }}
               >
                 <Paper
-                  elevation={0}
+                  elevation={3}
                   sx={{
                     p: 1.5,
                     px: 2,
@@ -276,9 +246,15 @@ function ChatPage() {
                         : 'text.primary',
                     borderRadius:
                       message.userId === currentUser.uid
-                        ? '20px 20px 0 20px'
-                        : '20px 20px 20px 0',
+                        ? '20px 20px 4px 20px'
+                        : '20px 20px 20px 4px',
                     wordBreak: 'break-word',
+                    boxShadow: '0 4px 8px rgba(0, 0, 0, 0.1)',
+                    transition: 'transform 0.2s',
+                    position: 'relative',
+                    '&:hover': {
+                      transform: 'scale(1.02)',
+                    },
                   }}
                 >
                   <Typography variant="body1">{message.text}</Typography>
@@ -303,7 +279,7 @@ function ChatPage() {
         <Paper
           component="form"
           onSubmit={sendMessage}
-          elevation={0}
+          elevation={3}
           sx={{
             p: 2,
             bgcolor: 'white',
@@ -315,9 +291,7 @@ function ChatPage() {
             bottom: '80px',
             left: 0,
             right: 0,
-            // スムーズなアニメーションのためのトランジション
             transition: 'transform 0.3s ease-in-out',
-            // モバイルデバイスでキーボードが表示された時の挙動を制御
             '@media (max-height: 400px)': {
               position: 'static',
             },

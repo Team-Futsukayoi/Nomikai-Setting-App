@@ -90,7 +90,9 @@ export default function GroupEventDetail({ event, groupId, onClose }) {
       elevation={3}
       sx={{
         borderRadius: '16px',
-        bgcolor: 'background.paper',
+        background:
+          'linear-gradient(135deg, rgba(255,255,255,0.9), rgba(255,255,255,0.7))',
+        backdropFilter: 'blur(10px)',
         mb: 1,
         overflow: 'visible',
       }}
@@ -106,13 +108,13 @@ export default function GroupEventDetail({ event, groupId, onClose }) {
               icon={<StarIcon sx={{ color: 'warning.main' }} />}
               label={`${store.rating || '--'} / 5.0`}
               size="small"
-              sx={{ bgcolor: 'warning.light' }}
+              sx={{ background: 'rgba(255, 215, 0, 0.2)' }}
             />
             {store.price_level && (
               <Chip
                 label={'¥'.repeat(store.price_level)}
                 size="small"
-                sx={{ bgcolor: 'warning.light' }}
+                sx={{ background: 'rgba(255, 215, 0, 0.2)' }}
               />
             )}
           </Box>
@@ -147,7 +149,7 @@ export default function GroupEventDetail({ event, groupId, onClose }) {
                   <Avatar
                     key={uid}
                     sx={{
-                      bgcolor:
+                      background:
                         status === 'accepted' ? 'success.main' : 'grey.400',
                       width: 24,
                       height: 24,
@@ -180,8 +182,10 @@ export default function GroupEventDetail({ event, groupId, onClose }) {
           <Button
             variant="contained"
             sx={{
-              bgcolor: 'warning.main',
-              '&:hover': { bgcolor: 'warning.dark' },
+              background: 'linear-gradient(135deg, #FFD700, #FFC400)',
+              '&:hover': {
+                background: 'linear-gradient(135deg, #FFC400, #FFB300)',
+              },
             }}
             onClick={handleJoin}
           >

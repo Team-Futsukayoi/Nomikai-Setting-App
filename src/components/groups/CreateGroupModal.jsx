@@ -1,194 +1,123 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
+  Modal,
+  Box,
+  Typography,
   TextField,
   Button,
-  Stack,
-  Typography,
-  Chip,
+  Checkbox,
+  List,
+  ListItem,
+  ListItemText,
+  ListItemButton,
   CircularProgress,
-  Box
 } from '@mui/material';
-import { collection, addDoc, getDocs, query, where, serverTimestamp } from 'firebase/firestore';
-import { db } from '../../firebaseConfig';
 
-export const CreateGroupModal = ({ open, onClose, currentUser, onGroupCreated }) => {
+export const CreateGroupModal = ({
+  open,
+  onClose,
+  currentUser,
+  onGroupCreated,
+  friendList = [],
+}) => {
+  const [selectedUsers, setSelectedUsers] = useState([]);
   const [groupName, setGroupName] = useState('');
-  const [memberId, setMemberId] = useState('');
-  const [groupMembers, setGroupMembers] = useState([]);
-  const [isCreating, setIsCreating] = useState(false);
 
-  useEffect(() => {
-    if (open) {
-      const currentUserMember = {
-        uid: currentUser.uid,
-        userId: currentUser.userId,
-        username: currentUser.username,
-        role: 'admin'
-      };
-      setGroupMembers([currentUserMember]);
-    } else {
-      setGroupMembers([]);
-      setGroupName('');
-      setMemberId('');
-    }
-  }, [open, currentUser]);
-
-  const handleAddMember = async () => {
-    if (!memberId.trim()) return;
-
-    if (memberId.trim() === currentUser.userId) {
-      alert('自分自身を追加することはできません');
-      setMemberId('');
-      return;
-    }
-
-    if (groupMembers.some(m => m.userId === memberId.trim())) {
-      alert('既に追加されているメンバーです');
-      setMemberId('');
-      return;
-    }
-
-    try {
-      const usersRef = collection(db, 'users');
-      const q = query(usersRef, where('userId', '==', memberId.trim()));
-      const querySnapshot = await getDocs(q);
-      
-      if (!querySnapshot.empty) {
-        const userData = querySnapshot.docs[0].data();
-        setGroupMembers([...groupMembers, {
-          userId: memberId.trim(),
-          username: userData.username,
-          uid: querySnapshot.docs[0].id,
-          role: 'member'
-        }]);
-        setMemberId('');
-      } else {
-        alert('ユーザーが見つかりません');
-      }
-    } catch (error) {
-      console.error('メンバー追加エラー:', error);
-      alert('メンバーの追加に失敗しました');
-    }
+  const handleToggle = (userId) => {
+    setSelectedUsers((prevSelected) =>
+      prevSelected.includes(userId)
+        ? prevSelected.filter((id) => id !== userId)
+        : [...prevSelected, userId]
+    );
   };
 
-  const handleCreateGroup = async () => {
-    if (!groupName.trim() || groupMembers.length === 0) {
-      alert('グループ名とメンバーを入力してください');
-      return;
-    }
-
-    setIsCreating(true);
-    try {
-      const newGroup = {
-        name: groupName.trim(),
-        createdBy: currentUser.uid,
-        createdAt: serverTimestamp(),
-        members: [
-          {
-            uid: currentUser.uid,
-            userId: currentUser.userId,
-            username: currentUser.username,
-            role: 'admin'
-          },
-          ...groupMembers
-        ],
-        updatedAt: serverTimestamp()
-      };
-
-      await addDoc(collection(db, 'groups'), newGroup);
-      onGroupCreated();
-      onClose();
-    } catch (error) {
-      console.error('グループ作成エラー:', error);
-      alert('グループの作成に失敗しました');
-    } finally {
-      setIsCreating(false);
-      setGroupName('');
-      setGroupMembers([]);
-    }
-  };
-
-  const handleDeleteMember = (memberUserId) => {
-    if (memberUserId === currentUser.userId) {
-      alert('グループ作成者は削除できません');
-      return;
-    }
-    setGroupMembers(members => members.filter(m => m.userId !== memberUserId));
+  const handleCreateGroup = () => {
+    onGroupCreated({ groupName, members: selectedUsers });
+    setSelectedUsers([]);
+    setGroupName('');
+    onClose();
   };
 
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
-      <DialogTitle>新しいグループを作成</DialogTitle>
-      <DialogContent>
-        <Stack spacing={3} sx={{ mt: 2 }}>
-          <TextField
-            label="グループ名"
-            value={groupName}
-            onChange={(e) => setGroupName(e.target.value)}
-            fullWidth
-            variant="outlined"
-          />
-          
-          <Box>
-            <TextField
-              label="メンバーのユーザーID"
-              value={memberId}
-              onChange={(e) => setMemberId(e.target.value)}
-              fullWidth
-              variant="outlined"
-              onKeyPress={(e) => {
-                if (e.key === 'Enter') {
-                  e.preventDefault();
-                  handleAddMember();
-                }
-              }}
-            />
-            <Button 
-              onClick={handleAddMember}
-              variant="outlined"
-              sx={{ mt: 1 }}
-            >
-              メンバーを追加
-            </Button>
+    <Modal open={open} onClose={onClose}>
+      <Box
+        sx={{
+          position: 'absolute',
+          top: '50%',
+          left: '50%',
+          transform: 'translate(-50%, -50%)',
+          width: 300,
+          bgcolor: 'background.paper',
+          boxShadow: '0 8px 32px rgba(0, 0, 0, 0.08)',
+          p: 4,
+          borderRadius: 3,
+          outline: 'none',
+        }}
+      >
+        <Typography variant="h6" sx={{ mb: 3, fontWeight: 600, color: '#333' }}>
+          グループを作成
+        </Typography>
+        <TextField
+          fullWidth
+          label="グループ名"
+          variant="outlined"
+          value={groupName}
+          onChange={(e) => setGroupName(e.target.value)}
+          sx={{ mb: 3 }}
+        />
+        <Typography variant="subtitle1" sx={{ mb: 2, color: '#333' }}>
+          メンバーを追加
+        </Typography>
+        {friendList.length === 0 ? (
+          <Box sx={{ textAlign: 'center', py: 2 }}>
+            <Typography variant="body2" color="text.secondary">
+              フレンドがいません
+            </Typography>
           </Box>
-
-          {groupMembers.length > 0 && (
-            <Box>
-              <Typography variant="subtitle1" gutterBottom>
-                メンバー:
-              </Typography>
-              <Stack direction="row" spacing={1} flexWrap="wrap">
-                {groupMembers.map((member) => (
-                  <Chip
-                    key={member.userId}
-                    label={`${member.username}${member.role === 'admin' ? ' (管理者)' : ''}`}
-                    onDelete={member.role === 'admin' ? undefined : () => handleDeleteMember(member.userId)}
-                    color={member.role === 'admin' ? 'primary' : 'default'}
-                    sx={{ m: 0.5 }}
+        ) : (
+          <List sx={{ maxHeight: 150, overflowY: 'auto', mb: 3 }}>
+            {friendList.map((friend) => (
+              <ListItem key={friend.id} dense disablePadding>
+                <ListItemButton onClick={() => handleToggle(friend.id)}>
+                  <Checkbox
+                    edge="start"
+                    checked={selectedUsers.includes(friend.id)}
+                    tabIndex={-1}
+                    disableRipple
+                    sx={{
+                      color: '#FFD700',
+                      '&.Mui-checked': {
+                        color: '#FFD700',
+                      },
+                    }}
                   />
-                ))}
-              </Stack>
-            </Box>
-          )}
-        </Stack>
-      </DialogContent>
-      <DialogActions>
-        <Button onClick={onClose} color="primary">
-          キャンセル
-        </Button>
+                  <ListItemText primary={friend.username} />
+                </ListItemButton>
+              </ListItem>
+            ))}
+          </List>
+        )}
         <Button
-          onClick={handleCreateGroup}
-          color="primary"
+          fullWidth
           variant="contained"
-          disabled={isCreating || !groupName.trim() || groupMembers.length === 0}
+          sx={{
+            bgcolor: '#FFD700',
+            color: 'white',
+            py: 1.5,
+            '&:hover': {
+              bgcolor: '#FFC400',
+            },
+            '&.Mui-disabled': {
+              bgcolor: '#FFE566',
+              color: 'white',
+            },
+          }}
+          onClick={handleCreateGroup}
+          disabled={!groupName || selectedUsers.length === 0}
         >
-          {isCreating ? <CircularProgress size={24} /> : 'グループを作成'}
+          作成
         </Button>
-      </DialogActions>
-    </Dialog>
+      </Box>
+    </Modal>
   );
 };

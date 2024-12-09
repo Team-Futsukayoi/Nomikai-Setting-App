@@ -17,7 +17,6 @@ export const FriendList = ({ friendList }) => {
   // console.log('FriendList component received:', friendList);
   return (
     <StyledPaper>
-      
       <List sx={{ width: '100%', maxHeight: '300px', overflowY: 'auto' }}>
         {friendList && friendList.length > 0 ? (
           friendList.map(({ id, username, userId, icon }) => (
@@ -27,9 +26,12 @@ export const FriendList = ({ friendList }) => {
                   width: '100%',
                   borderRadius: 2,
                   mb: 1,
-                  padding: '8px', // パディングを縮小
+                  padding: '8px',
+                  transition: 'all 0.3s ease',
                   '&:hover': {
-                    bgcolor: 'rgba(255, 215, 0, 0.08)',
+                    bgcolor: 'rgba(255, 215, 0, 0.1)',
+                    transform: 'translateY(-2px)',
+                    boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
                   },
                 }}
               >
@@ -38,35 +40,37 @@ export const FriendList = ({ friendList }) => {
                     display: 'flex',
                     alignItems: 'center',
                     width: '100%',
-                    gap: 1, // 要素間の間隔を縮小
+                    gap: 1,
                   }}
                 >
-                  {/* アバター */}
                   <Avatar
                     alt={username || `ID: ${userId}`}
                     src={icon}
                     sx={{
-                      width: 36, // さらにサイズを小さく
-                      height: 36,
+                      width: 40,
+                      height: 40,
                       border: 2,
                       borderColor: 'primary.light',
                       flexShrink: 0,
+                      transition: 'all 0.3s ease',
+                      '&:hover': {
+                        transform: 'scale(1.1)',
+                      },
                     }}
                   />
 
-                  {/* ユーザー情報 */}
                   <Box
                     sx={{
                       flex: 1,
                       minWidth: 0,
-                      overflow: 'hidden', // はみ出し防止
+                      overflow: 'hidden',
                     }}
                   >
                     <Typography
                       variant="subtitle1"
                       sx={{
                         fontWeight: 500,
-                        fontSize: '0.85rem',
+                        fontSize: '0.9rem',
                         lineHeight: 1.2,
                         whiteSpace: 'nowrap',
                         overflow: 'hidden',
@@ -90,7 +94,6 @@ export const FriendList = ({ friendList }) => {
                     </Typography>
                   </Box>
 
-                  {/* チャットボタン */}
                   <Link
                     to={`/chat/${id}`}
                     style={{
@@ -102,11 +105,16 @@ export const FriendList = ({ friendList }) => {
                     <StyledButton
                       variant="outlined"
                       sx={{
-                        minWidth: '32px', // ボタンの最小幅を設定
-                        width: '36px', // 幅を固定
-                        height: '36px', // 高さを固定
-                        padding: '6px', // パディングを調整
-                        borderRadius: '50%', // 円形のボタンに
+                        minWidth: '32px',
+                        width: '36px',
+                        height: '36px',
+                        padding: '6px',
+                        borderRadius: '50%',
+                        transition: 'all 0.3s ease',
+                        '&:hover': {
+                          bgcolor: 'primary.light',
+                          transform: 'scale(1.1)',
+                        },
                       }}
                     >
                       <ChatBubbleOutline sx={{ fontSize: '1rem' }} />
