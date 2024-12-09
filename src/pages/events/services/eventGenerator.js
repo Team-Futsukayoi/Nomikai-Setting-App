@@ -5,7 +5,6 @@ export async function generateEvent(timeSlots, groupId) {
   try {
     console.log('利用可能な時間帯:', timeSlots);
 
-    // 共通の時間帯からランダムに1つ選択
     const randomTimeSlot =
       timeSlots[Math.floor(Math.random() * timeSlots.length)];
     console.log(
@@ -15,15 +14,25 @@ export async function generateEvent(timeSlots, groupId) {
     );
 
     const store = await selectStore(randomTimeSlot, groupId);
+    console.log('選択された店舗:', store);
+
+    // 店舗情報の必須フィールドチェック
+    if (!store.name) {
+      throw new Error('店舗名が取得できませんでした');
+    }
+
+    // 住所情報の取得（formatted_addressを優先）
+    const address = store.formatted_address || store.vicinity || '住所不明';
 
     return {
       store: {
         name: store.name,
-        address: store.vicinity || store.formatted_address,
-        placeId: store.place_id,
-        rating: store.rating,
-        userRatingsTotal: store.user_ratings_total,
-        priceLevel: store.price_level,
+        address: address,
+        placeId: store.place_id || null,
+        rating: store.rating || 0,
+        userRatingsTotal: store.user_ratings_total || 0,
+        priceLevel: store.price_level || 0,
+        businessStatus: store.business_status || 'UNKNOWN',
       },
       timeSlot: TIME_RANGES[randomTimeSlot],
     };
