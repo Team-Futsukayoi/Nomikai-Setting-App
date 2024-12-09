@@ -19,10 +19,12 @@ export default function GroupEventPreview({ event, isExpanded, onToggle }) {
 
   return (
     <Card
-      elevation={2}
+      elevation={3}
       sx={{
         borderRadius: '16px',
-        bgcolor: 'background.paper',
+        background:
+          'linear-gradient(135deg, rgba(255,255,255,0.9), rgba(255,255,255,0.7))',
+        backdropFilter: 'blur(10px)',
         transition: 'all 0.3s ease',
         cursor: 'pointer',
         overflow: 'visible',
@@ -39,7 +41,7 @@ export default function GroupEventPreview({ event, isExpanded, onToggle }) {
           position: 'absolute',
           top: -20,
           left: 20,
-          bgcolor: 'warning.main',
+          background: 'linear-gradient(135deg, #FFD700, #FFC400)',
           borderRadius: '50%',
           width: 40,
           height: 40,
@@ -105,9 +107,9 @@ export default function GroupEventPreview({ event, isExpanded, onToggle }) {
             size="small"
             sx={{
               color: 'warning.main',
-              bgcolor: 'warning.light',
+              background: 'rgba(255, 215, 0, 0.2)',
               '&:hover': {
-                bgcolor: 'warning.light',
+                background: 'rgba(255, 215, 0, 0.3)',
                 transform: 'rotate(180deg)',
               },
               transition: 'all 0.3s ease',
