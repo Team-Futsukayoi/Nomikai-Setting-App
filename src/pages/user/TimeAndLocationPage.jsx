@@ -278,6 +278,9 @@ const TimeAndLocationPage = () => {
     try {
       const user = auth.currentUser;
       if (user) {
+        // 保存前にデータをログ出力
+        console.log('保存する位置情報:', preferredLocations);
+
         await updateDoc(doc(db, 'users', user.uid), {
           availableTimes,
           preferredLocations,

@@ -29,6 +29,7 @@ import { useAuth } from '../../hooks/useAuth';
 import theme from '../../styles/theme';
 import { format } from 'date-fns';
 import { ja } from 'date-fns/locale';
+import EventGenerationTest from '../events/tests/EventGenerationTest';
 
 function GroupChatPage() {
   const [messages, setMessages] = useState([]);
@@ -66,15 +67,19 @@ function GroupChatPage() {
       orderBy('createdAt', 'asc')
     );
 
-    const unsubscribe = onSnapshot(q, (querySnapshot) => {
-      const fetchedMessages = querySnapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      }));
-      setMessages(fetchedMessages);
-    }, (error) => {
-      console.error('メッセージ取得エラー:', error);
-    });
+    const unsubscribe = onSnapshot(
+      q,
+      (querySnapshot) => {
+        const fetchedMessages = querySnapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        }));
+        setMessages(fetchedMessages);
+      },
+      (error) => {
+        console.error('メッセージ取得エラー:', error);
+      }
+    );
 
     return () => unsubscribe();
   }, [currentUser, groupId]);
@@ -96,7 +101,7 @@ function GroupChatPage() {
         createdAt: serverTimestamp(),
         userId: currentUser.uid,
         username: currentUser.username || 'unknown',
-        groupId: groupId
+        groupId: groupId,
       };
 
       await addDoc(collection(db, 'groupMessages'), messageData);
@@ -183,6 +188,12 @@ function GroupChatPage() {
               </Typography>
             </Box>
           </Box>
+          <Container maxWidth="sm" sx={{ py: 2 }}>
+            <EventGenerationTest
+              groupId={groupId}
+              members={groupInfo?.members || []}
+            />
+          </Container>
         </Paper>
 
         {/* メッセージエリア */}
