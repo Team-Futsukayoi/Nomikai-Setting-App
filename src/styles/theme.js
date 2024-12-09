@@ -22,6 +22,25 @@ const theme = createTheme({
   typography: {
     fontFamily: '"Roboto", "Helvetica", "Arial", sans-serif',
   },
+  components: {
+    MuiPaper: {
+      styleOverrides: {
+        root: {
+          '@keyframes fadeIn': {
+            from: {
+              opacity: 0,
+              transform: 'translateY(10px)',
+            },
+            to: {
+              opacity: 1,
+              transform: 'translateY(0)',
+            },
+          },
+          animation: 'fadeIn 0.3s ease-out',
+        },
+      },
+    },
+  },
 });
 
 export default theme;
