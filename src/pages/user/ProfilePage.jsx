@@ -36,7 +36,6 @@ import { profileStyles } from '../../styles/profileStyles';
 import { timeSlots } from '../../consts/constants';
 import { styled } from '@mui/material/styles';
 import { alpha } from '@mui/material/styles';
-import { Loader } from '@googlemaps/js-api-loader';
 import { motion } from 'framer-motion';
 import SportsBarIcon from '@mui/icons-material/SportsBar';
 import LiquorIcon from '@mui/icons-material/Liquor';
@@ -394,8 +393,6 @@ const ProfilePage = () => {
                 const finalAreaName =
                   areaName.trim() || result.formatted_address;
                 newAreaDetails.set(placeId, finalAreaName);
-
-                console.log(`Fetched area name for ${placeId}:`, finalAreaName);
               } catch (error) {
                 console.error('Error fetching area detail:', error);
                 newAreaDetails.set(placeId, placeId);
