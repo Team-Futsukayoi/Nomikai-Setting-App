@@ -1,3 +1,4 @@
+/// <reference types="vite/client" />
 import OneSignal from 'react-onesignal';
 
 export const initializeNotifications = async () => {
