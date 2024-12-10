@@ -19,13 +19,13 @@ import PersonIcon from '@mui/icons-material/Person';
 import LogoutIcon from '@mui/icons-material/Logout';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { signOut } from 'firebase/auth';
-import { auth } from '../firebaseConfig';
+import { useAuth } from '../hooks/useAuth';
 import headerStyles from '../styles/headerStyles';
 
 const Header = () => {
   const [open, setOpen] = useState(false);
   const navigate = useNavigate();
+  const { signOut } = useAuth();
 
   const toggleDrawer = (open) => (event) => {
     if (
@@ -39,7 +39,7 @@ const Header = () => {
 
   const handleLogout = async () => {
     try {
-      await signOut(auth);
+      await signOut();
       navigate('/signin');
     } catch (error) {
       console.error('ログアウトに失敗しました:', error);
