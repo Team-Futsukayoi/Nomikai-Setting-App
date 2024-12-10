@@ -1,10 +1,17 @@
-import { ref, onDisconnect, set, onValue, off } from 'firebase/database';
+import {
+  ref,
+  onDisconnect,
+  set,
+  onValue,
+  off,
+  get,
+  remove,
+} from 'firebase/database';
 import { realTimeDb } from '../firebaseConfig';
 
 export const initializeOnlineStatus = (userId) => {
   if (!userId) return;
 
-  // オンラインステータスの参照を作成
   const userStatusRef = ref(realTimeDb, `/status/${userId}`);
 
   // 接続が切れた時の処理を設定
@@ -18,6 +25,18 @@ export const initializeOnlineStatus = (userId) => {
     state: 'online',
     lastSeen: new Date().toISOString(),
   });
+
+  // クリーンアップ関数を返す
+  return async () => {
+    try {
+      // ステータスノードを完全に削除
+      await remove(userStatusRef);
+      // onDisconnectハンドラーをキャンセル
+      await onDisconnect(userStatusRef).cancel();
+    } catch (error) {
+      console.error('オンラインステータスのクリーンアップに失敗:', error);
+    }
+  };
 };
 
 export const subscribeToUserStatus = (userId, callback) => {
