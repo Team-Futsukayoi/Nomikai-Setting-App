@@ -216,9 +216,11 @@ function GroupChatPage() {
       <Box
         sx={{
           bgcolor: '#EAEAEA',
-          minHeight: '100vh',
+          height: 'calc(100vh - 144px)',
           display: 'flex',
           flexDirection: 'column',
+          position: 'relative',
+          overflow: 'hidden',
         }}
       >
         {/* ヘッダー */}
@@ -277,9 +279,11 @@ function GroupChatPage() {
             flex: 1,
             overflowY: 'auto',
             p: 2,
-            mt: '136px',
-            mb: '200px',
+            mt: '88px',
+            mb: '75px',
             zIndex: 1,
+            height: 'calc(100vh - 280px)',
+            maxHeight: 'calc(100vh - 280px)',
           }}
         >
           {messages.map((message) => (
@@ -398,6 +402,7 @@ function GroupChatPage() {
             left: 0,
             right: 0,
             bgcolor: 'background.paper',
+            zIndex: 2,
           }}
         >
           <Paper
