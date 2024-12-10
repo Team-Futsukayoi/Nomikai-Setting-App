@@ -11,7 +11,9 @@ import {
   serverTimestamp,
   doc,
   getDoc,
-  getDocs,
+  // getDocs,
+  updateDoc,
+  arrayUnion,
 } from 'firebase/firestore';
 import {
   Box,
@@ -61,23 +63,15 @@ function ChatPage() {
         .catch((error) => {
           console.error('フレンド情報の取得エラー:', error);
         });
-
+  
       // メッセージを取得
       const q = query(
         collection(db, 'messages'),
         where('participants', 'array-contains', currentUser.uid),
         orderBy('createdAt', 'asc')
       );
-
+  
       const unsubscribe = onSnapshot(q, (querySnapshot) => {
-        // 最初のメッセージの内容を詳しく確認
-        const firstMessage = querySnapshot.docs[0]?.data();
-        console.log('Debug - First message details:', {
-          messageData: firstMessage,
-          participantsType: typeof firstMessage?.participants,
-          participantsContent: firstMessage?.participants,
-        });
-
         const fetchedMessages = querySnapshot.docs
           .map((doc) => ({
             id: doc.id,
@@ -85,7 +79,7 @@ function ChatPage() {
           }))
           .filter((msg) => {
             const participants = msg.participants;
-
+  
             // 1対1のチャットメッセージのみをフィルタリング
             return (
               participants.length === 2 &&
@@ -93,13 +87,29 @@ function ChatPage() {
               participants.includes(cleanFriendId)
             );
           });
+  
+        // 未読メッセージの既読状態を更新
+        fetchedMessages.forEach((message) => {
+          const otherParticipant = message.participants.find(
+            (id) => id !== message.userId
+          );
+          if (
+            Array.isArray(message.readBy) &&
+            !message.readBy.includes(currentUser.uid) &&
+            message.userId !== currentUser.uid
+          ) {
+            markAsRead(message.id);
+          }
+        });
+  
         setMessages(fetchedMessages);
       });
-
+  
       return () => unsubscribe();
     }
   }, [currentUser, friendId]);
 
+  //自動スクロール
   useEffect(() => {
     const scrollToBottom = () => {
       if (messagesEndRef.current) {
@@ -109,26 +119,48 @@ function ChatPage() {
     scrollToBottom();
   }, [messages]);
 
-  const sendMessage = async (e) => {
-    e.preventDefault();
-    if (newMessage.trim() === '') return;
+// メッセージ送信
+const sendMessage = async (e) => {
+  e.preventDefault();
 
-    try {
-      const cleanFriendId = friendId.split('_').pop() || friendId;
-      const messageData = {
-        text: newMessage,
-        createdAt: serverTimestamp(),
-        userId: currentUser.uid,
-        participants: [currentUser.uid, cleanFriendId].sort(),
-      };
-      await addDoc(collection(db, 'messages'), messageData);
+  if (newMessage.trim() === '') return;
 
-      setNewMessage('');
+  try {
+    const cleanFriendId = friendId.split('_').pop() || friendId;
+    const messageData = {
+      text: newMessage.trim(),
+      createdAt: serverTimestamp(),
+      userId: currentUser.uid,
+      participants: [currentUser.uid, cleanFriendId].sort(),
+      readBy: [currentUser.uid], // 送信者を既読として初期化
+    };
+
+    await addDoc(collection(db, 'messages'), messageData);
+    setNewMessage('');
     } catch (error) {
       console.error('メッセージ送信エラー:', error);
     }
+  }; 
+
+  const markAsRead = async (messageId) => {
+    try {
+      const messageRef = doc(db, 'messages', messageId);
+      await updateDoc(messageRef, {
+        readBy: arrayUnion(currentUser.uid),
+      });
+    } catch (error) {
+      console.error('既読状態の更新に失敗しました:', error);
+    }
   };
 
+  // 既読/未読の判定を行う
+  const isMessageRead = (message) => {
+    const otherParticipant = message.participants.find(
+      (id) => id !== message.userId
+    );
+    return Array.isArray(message.readBy) && message.readBy.includes(otherParticipant);
+  };
+  
   return (
     <ThemeProvider theme={theme}>
       <Box
@@ -201,8 +233,8 @@ function ChatPage() {
             flex: 1,
             overflowY: 'auto',
             p: 2,
-            pt: '56px', // ヘッダーの高さに合わせる
-            pb: '36px', // 入力エリアの高さに合わせる
+            pt: '56px',
+            pb: '36px',
             display: 'flex',
             flexDirection: 'column',
             gap: 1.5,
@@ -237,38 +269,39 @@ function ChatPage() {
                     p: 1.5,
                     px: 2,
                     bgcolor:
-                      message.userId === currentUser.uid
-                        ? 'primary.main'
-                        : 'white',
-                    color:
-                      message.userId === currentUser.uid
-                        ? 'white'
-                        : 'text.primary',
-                    borderRadius:
-                      message.userId === currentUser.uid
-                        ? '20px 20px 4px 20px'
-                        : '20px 20px 20px 4px',
-                    wordBreak: 'break-word',
-                    boxShadow: '0 4px 8px rgba(0, 0, 0, 0.1)',
-                    transition: 'transform 0.2s',
-                    position: 'relative',
-                    '&:hover': {
-                      transform: 'scale(1.02)',
-                    },
-                  }}
-                >
-                  <Typography variant="body1">{message.text}</Typography>
-                </Paper>
-                <Typography
-                  variant="caption"
-                  sx={{
-                    color: 'text.secondary',
-                    px: 0.5,
-                  }}
-                >
-                  {message.createdAt &&
-                    format(message.createdAt.toDate(), 'HH:mm', { locale: ja })}
-                </Typography>
+                    message.userId === currentUser.uid
+                      ? 'primary.main'
+                      : 'white',
+                  color:
+                    message.userId === currentUser.uid
+                      ? 'white'
+                      : 'text.primary',
+                  borderRadius:
+                    message.userId === currentUser.uid
+                      ? '20px 20px 4px 20px'
+                      : '20px 20px 20px 4px',
+                  wordBreak: 'break-word',
+                  boxShadow: '0 4px 8px rgba(0, 0, 0, 0.1)',
+                  transition: 'transform 0.2s',
+                  '&:hover': {
+                    transform: 'scale(1.02)',
+                  },
+                }}
+              >
+                <Typography variant="body1">{message.text}</Typography>
+              </Paper>
+              <Typography
+                variant="caption"
+                sx={{ 
+                  color: 'text.secondary',
+                  px: 0.5
+                }}
+              >
+                {message.createdAt &&
+                  format(message.createdAt.toDate(), 'HH:mm', { locale: ja })}
+                {' '}
+                {isMessageRead(message) ? '既読' : '未読'}
+              </Typography>
               </Box>
             </Box>
           ))}
