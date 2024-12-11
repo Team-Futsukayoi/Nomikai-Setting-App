@@ -300,7 +300,7 @@ const sendMessage = async (e) => {
                 {message.createdAt &&
                   format(message.createdAt.toDate(), 'HH:mm', { locale: ja })}
                 {' '}
-                {isMessageRead(message) ? '既読' : '未読'}
+                {isMessageRead(message) ? '既読': ''}
               </Typography>
               </Box>
             </Box>
