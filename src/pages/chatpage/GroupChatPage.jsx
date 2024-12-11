@@ -191,19 +191,20 @@ function GroupChatPage() {
       const today = new Date();
       const formattedDate = format(today, 'yyyy/MM/dd');
 
-      console.log('保存する日付:', formattedDate); // デバッグ用
+      const eventData = {
+        store: result.store,
+        timeSlot: result.timeSlot,
+        date: formattedDate,
+        participants: {},
+        createdAt: serverTimestamp(),
+      };
 
-      await setDoc(
-        eventRef,
-        {
-          store: result.store,
-          timeSlot: result.timeSlot,
-          date: formattedDate, // 日付を文字列として保存
-          participants: {},
-          createdAt: serverTimestamp(),
-        },
-        { merge: false }
-      );
+      await setDoc(eventRef, eventData, { merge: false });
+
+      // グループメンバーのユーザーIDを取得
+      const groupDoc = await getDoc(doc(db, 'groups', groupId));
+      const groupData = groupDoc.data();
+      const memberIds = groupData.members.map((member) => member.uid);
     } catch (error) {
       console.error('イベント生成エラー:', error);
     } finally {
@@ -467,24 +468,24 @@ function GroupChatPage() {
         </Box>
 
         {/* イベント生成ボタン */}
-        {/* <Tooltip title="イベントを生成"> */}
-        {/* <Fab */}
-        {/* color="primary" */}
-        {/* sx={{ */}
-        {/* position: 'fixed', */}
-        {/* right: 24, */}
-        {/* bottom: 96, */}
-        {/* bgcolor: 'warning.main', */}
-        {/* '&:hover': { */}
-        {/* bgcolor: 'warning.dark', */}
-        {/* }, */}
-        {/* }} */}
-        {/* onClick={handleGenerateEvent} */}
-        {/* disabled={loading} */}
-        {/* > */}
-        {/* {loading ? <CircularProgress size={24} /> : <AddIcon />} */}
-        {/* </Fab> */}
-        {/* </Tooltip> */}
+        <Tooltip title="イベントを生成">
+          <Fab
+            color="primary"
+            sx={{
+              position: 'fixed',
+              right: 24,
+              bottom: 96,
+              bgcolor: 'warning.main',
+              '&:hover': {
+                bgcolor: 'warning.dark',
+              },
+            }}
+            onClick={handleGenerateEvent}
+            disabled={loading}
+          >
+            {loading ? <CircularProgress size={24} /> : <AddIcon />}
+          </Fab>
+        </Tooltip>
       </Box>
     </ThemeProvider>
   );
