@@ -292,9 +292,7 @@ function GroupChatPage() {
       // 現在のサブスクリプション状態を確認
       const status = await OneSignal.User.PushSubscription.optedIn;
       if (!status) {
-        // サブスクリプションが無効な場合は再度オプトインを試みる
         await OneSignal.User.PushSubscription.optIn();
-        // 状態の反映を待つ
         await new Promise((resolve) => setTimeout(resolve, 2000));
       }
 
@@ -302,7 +300,7 @@ function GroupChatPage() {
       if (oneSignalId) {
         const userRef = doc(db, 'users', userId);
         await updateDoc(userRef, {
-          oneSignalId: oneSignalId,
+          oneSignalUserId: oneSignalId,
           oneSignalUpdatedAt: serverTimestamp(),
         });
         console.log('OneSignal ID更新成功:', oneSignalId);
@@ -464,8 +462,9 @@ function GroupChatPage() {
                   }}
                 >
                   {message.createdAt &&
-                    format(message.createdAt.toDate(), 'HH:mm', { locale: ja })}
-                  {' '}
+                    format(message.createdAt.toDate(), 'HH:mm', {
+                      locale: ja,
+                    })}{' '}
                   {getReadStatus(message)}
                 </Typography>
               </Box>
