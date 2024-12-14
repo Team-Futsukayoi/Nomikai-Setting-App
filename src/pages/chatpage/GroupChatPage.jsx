@@ -13,6 +13,7 @@ import {
   getDoc,
   setDoc,
   updateDoc,
+  arrayUnion,
 } from 'firebase/firestore';
 import {
   Box,
@@ -95,7 +96,19 @@ function GroupChatPage() {
         const fetchedMessages = querySnapshot.docs.map((doc) => ({
           id: doc.id,
           ...doc.data(),
+          readBy: doc.data().readBy || [],
         }));
+
+        // 未読メッセージを既読状態に更新
+        fetchedMessages.forEach((message) => {
+          if (
+            !message.readBy.includes(currentUser.uid) &&
+            message.userId !== currentUser.uid
+          ) {
+            markAsRead(message.id);
+          }
+        });
+
         setMessages(fetchedMessages);
       },
       (error) => {
@@ -154,6 +167,7 @@ function GroupChatPage() {
         userId: currentUser.uid,
         username: currentUser.username || 'unknown',
         groupId: groupId,
+        readBy: [currentUser.uid],
       };
 
       await addDoc(collection(db, 'groupMessages'), messageData);
@@ -161,6 +175,24 @@ function GroupChatPage() {
     } catch (error) {
       console.error('メッセージ送信エラー:', error);
     }
+  };
+
+  const markAsRead = async (messageId) => {
+    try {
+      const messageRef = doc(db, 'groupMessages', messageId);
+      await updateDoc(messageRef, {
+        readBy: arrayUnion(currentUser.uid),
+      });
+    } catch (error) {
+      console.error('既読状態の更新に失敗しました:', error);
+    }
+  };
+
+  const getReadStatus = (message) => {
+    const totalMembers = groupInfo?.members?.length || 0;
+    const readCount = message.readBy?.length || 0;
+    if (readCount <= 1) return '';
+    return `既読 ${readCount - 1}`;
   };
 
   const handleToggleEvent = () => {
@@ -433,6 +465,8 @@ function GroupChatPage() {
                 >
                   {message.createdAt &&
                     format(message.createdAt.toDate(), 'HH:mm', { locale: ja })}
+                  {' '}
+                  {getReadStatus(message)}
                 </Typography>
               </Box>
             </Box>
