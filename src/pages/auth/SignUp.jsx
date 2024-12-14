@@ -15,6 +15,7 @@ import { auth, db } from '../../firebaseConfig';
 import { doc, setDoc, getDoc } from 'firebase/firestore';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
 import { authStyles } from '../../styles/authStyles';
+import { initializeOneSignal } from '../../services/notifications/oneSignal';
 
 export const SignUp = () => {
   const [email, setEmail] = useState('');
@@ -40,7 +41,7 @@ export const SignUp = () => {
     try {
       const userIdDoc = await getDoc(doc(db, 'userIds', userId));
       if (userIdDoc.exists()) {
-        setError('このユーザIDは既に使用されています。');
+        setError('このユーザーIDは既に使用されています。');
         setLoading(false);
         return;
       }
@@ -52,6 +53,9 @@ export const SignUp = () => {
       );
       const user = userCredential.user;
 
+      // OneSignalの初期化と通知許可の取得
+      const oneSignalUserId = await initializeOneSignal();
+
       // Firestoreにユーザー情報を保存
       await setDoc(doc(db, 'users', user.uid), {
         email: user.email,
@@ -59,6 +63,7 @@ export const SignUp = () => {
         username: username,
         createdAt: new Date(),
         isProfileComplete: false,
+        oneSignalUserId: oneSignalUserId,
       });
 
       await setDoc(doc(db, 'userIds', userId), { uid: user.uid });
@@ -109,7 +114,6 @@ export const SignUp = () => {
 
             <form onSubmit={handleSubmit}>
               <Stack spacing={3}>
-                
                 <TextField
                   label="ユーザー名（表示名）"
                   type="text"

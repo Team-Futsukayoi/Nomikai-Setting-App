@@ -37,7 +37,6 @@ export const SignIn = () => {
     e.preventDefault();
     setLoading(true);
 
-    // Validation for email and password
     if (!email || !password) {
       setError('メールアドレスとパスワードを入力してください');
       setLoading(false);
@@ -53,19 +52,20 @@ export const SignIn = () => {
       const user = userCredential.user;
 
       // Firestoreからuser情報を取得
-      const userDoc = await getDoc(doc(db, 'users', user.uid));
-      if (userDoc.exists()) {
-        const userData = userDoc.data();
-        if (!userData.isProfileComplete) {
-          navigate('/user-attributes');
-          return;
-        }
+      const userRef = doc(db, 'users', user.uid);
+      const userDoc = await getDoc(userRef);
+      const userData = userDoc.data();
+
+      // プロフィール完了チェック
+      if (userDoc.exists() && !userData.isProfileComplete) {
+        navigate('/user-attributes');
+        return;
       }
 
       setError('');
       navigate('/home');
     } catch (error) {
-      // Translate error message to Jap
+      // エラーハンドリング
       switch (error.code) {
         case 'auth/invalid-email':
           setError('無効なメールアドレスです');

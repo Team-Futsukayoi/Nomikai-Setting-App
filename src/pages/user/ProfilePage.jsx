@@ -599,6 +599,23 @@ const ProfilePage = () => {
   const getNearbyAreas = async () => {
     try {
       setIsLoadingLocation(true);
+
+      // ローカルストレージからキャッシュを確認
+      const cachedAreas = localStorage.getItem('nearbyAreas');
+      const cacheTimestamp = localStorage.getItem('nearbyAreasTimestamp');
+
+      // キャッシュが24時間以内の場合、それを使用
+      if (cachedAreas && cacheTimestamp) {
+        const now = new Date().getTime();
+        const cacheAge = now - parseInt(cacheTimestamp);
+        if (cacheAge < 24 * 60 * 60 * 1000) {
+          // 24時間
+          setNearbyAreas(JSON.parse(cachedAreas));
+          setIsLoadingLocation(false);
+          return;
+        }
+      }
+
       const google = await loader.load();
       const service = new google.maps.places.PlacesService(
         document.createElement('div')
@@ -649,6 +666,19 @@ const ProfilePage = () => {
             status === google.maps.places.PlacesServiceStatus.ZERO_RESULTS
           ) {
             resolve([]);
+          } else if (
+            status === google.maps.places.PlacesServiceStatus.OVER_QUERY_LIMIT
+          ) {
+            // クォータ超過時はキャッシュを確認
+            if (cachedAreas) {
+              resolve(JSON.parse(cachedAreas));
+            } else {
+              reject(
+                new Error(
+                  'API制限に達しました。しばらく待ってから再試行してください。'
+                )
+              );
+            }
           } else {
             reject(new Error('Places API error: ' + status));
           }
@@ -656,53 +686,67 @@ const ProfilePage = () => {
       });
 
       const detailedResults = await Promise.all(
-        results.map(
+        results.slice(0, 10).map(
+          // 結果を最大10件に制限
           (place) =>
             new Promise((resolve, reject) => {
-              service.getDetails(
-                {
-                  placeId: place.place_id,
-                  fields: [
-                    'name',
-                    'geometry',
-                    'address_components',
-                    'formatted_address',
-                  ],
-                },
-                (result, status) => {
-                  if (status === google.maps.places.PlacesServiceStatus.OK) {
-                    const components = result.address_components;
-                    const city = components.find(
-                      (c) =>
-                        c.types.includes('locality') ||
-                        c.types.includes('administrative_area_level_1')
-                    );
-                    const ward = components.find(
-                      (c) =>
-                        c.types.includes('sublocality_level_1') ||
-                        c.types.includes('ward')
-                    );
-                    const district = components.find(
-                      (c) =>
-                        c.types.includes('sublocality_level_2') ||
-                        c.types.includes('sublocality_level_3')
-                    );
+              setTimeout(() => {
+                // API呼び出しの間隔を空ける
+                service.getDetails(
+                  {
+                    placeId: place.place_id,
+                    fields: [
+                      'name',
+                      'geometry',
+                      'address_components',
+                      'formatted_address',
+                    ],
+                  },
+                  (result, status) => {
+                    if (status === google.maps.places.PlacesServiceStatus.OK) {
+                      const components = result.address_components;
+                      const city = components.find(
+                        (c) =>
+                          c.types.includes('locality') ||
+                          c.types.includes('administrative_area_level_1')
+                      );
+                      const ward = components.find(
+                        (c) =>
+                          c.types.includes('sublocality_level_1') ||
+                          c.types.includes('ward')
+                      );
+                      const district = components.find(
+                        (c) =>
+                          c.types.includes('sublocality_level_2') ||
+                          c.types.includes('sublocality_level_3')
+                      );
 
-                    let areaName = '';
-                    if (city) areaName += city.long_name;
-                    if (ward) areaName += ` ${ward.long_name}`;
-                    if (district) areaName += ` ${district.long_name}`;
+                      let areaName = '';
+                      if (city) areaName += city.long_name;
+                      if (ward) areaName += ` ${ward.long_name}`;
+                      if (district) areaName += ` ${district.long_name}`;
 
-                    resolve({
-                      ...place,
-                      detailedName: areaName.trim(),
-                      geometry: result.geometry,
-                    });
-                  } else {
-                    resolve(place);
+                      resolve({
+                        ...place,
+                        detailedName: areaName.trim(),
+                        geometry: result.geometry,
+                      });
+                    } else if (
+                      status ===
+                      google.maps.places.PlacesServiceStatus.OVER_QUERY_LIMIT
+                    ) {
+                      // クォータ超過時は基本情報のみ返す
+                      resolve({
+                        ...place,
+                        detailedName: place.name,
+                        geometry: place.geometry,
+                      });
+                    } else {
+                      resolve(place);
+                    }
                   }
-                }
-              );
+                );
+              }, 200); // 200ms間隔で実行
             })
         )
       );
@@ -735,12 +779,25 @@ const ProfilePage = () => {
       if (nearestAreas.length === 0) {
         setLocationError('近くの地域が見つかりませんでした。');
       } else {
+        // 結果をキャッシュに保存
+        localStorage.setItem('nearbyAreas', JSON.stringify(nearestAreas));
+        localStorage.setItem(
+          'nearbyAreasTimestamp',
+          new Date().getTime().toString()
+        );
         setNearbyAreas(nearestAreas);
       }
     } catch (error) {
       console.error('位置情報の取得に失敗:', error);
       setLocationError(error.message || '位置情報の取得に失敗しました。');
-      setNearbyAreas([]);
+
+      // エラー時にキャッシュがあれば使用
+      const cachedAreas = localStorage.getItem('nearbyAreas');
+      if (cachedAreas) {
+        setNearbyAreas(JSON.parse(cachedAreas));
+      } else {
+        setNearbyAreas([]);
+      }
     } finally {
       setIsLoadingLocation(false);
     }
@@ -1333,7 +1390,7 @@ const ProfilePage = () => {
           </Box>
         </ProfileCard>
       </Fade>
-      {/* スクロール時にナビゲーションバーと重ならな���ようにするためのスペーサー */}
+      {/* スクロール時にナビゲーションバーと重ならないようにするためのスペーサー */}
       <Box sx={{ height: '60px' }} />
     </Container>
   );
