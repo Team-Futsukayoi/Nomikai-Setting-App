@@ -12,6 +12,7 @@ import {
   doc,
   getDoc,
   setDoc,
+  updateDoc,
 } from 'firebase/firestore';
 import {
   Box,
@@ -41,6 +42,11 @@ import { generateEvent } from '../events/services/eventGenerator';
 import { getLoader } from '../events/api/googlePlacesApi';
 import AddIcon from '@mui/icons-material/Add';
 import GroupEventDetail from '../events/components/GroupEventDetail';
+import {
+  sendNotification,
+  getOneSignalId,
+} from '../../services/notifications/oneSignal';
+import OneSignal from 'react-onesignal';
 
 function GroupChatPage() {
   const [messages, setMessages] = useState([]);
@@ -184,6 +190,7 @@ function GroupChatPage() {
     setLoading(true);
 
     try {
+      // イベント生成処理
       const commonTimeSlots = ['evening', 'night', 'latenight'];
       const result = await generateEvent(commonTimeSlots, groupId);
 
@@ -201,16 +208,84 @@ function GroupChatPage() {
 
       await setDoc(eventRef, eventData, { merge: false });
 
-      // グループメンバーのユーザーIDを取得
+      // グループ情報の取得
       const groupDoc = await getDoc(doc(db, 'groups', groupId));
+      if (!groupDoc.exists()) {
+        console.error('グループが見つかりません');
+        return;
+      }
+
       const groupData = groupDoc.data();
       const memberIds = groupData.members.map((member) => member.uid);
+
+      // メンバーごとのOneSignalユーザーIDを取得
+      const memberPromises = memberIds.map(async (uid) => {
+        const userDoc = await getDoc(doc(db, 'users', uid));
+        if (userDoc.exists()) {
+          const userData = userDoc.data();
+          console.log(
+            `ユーザー ${uid} のOneSignalID:`,
+            userData.oneSignalUserId
+          );
+          return userData.oneSignalUserId;
+        }
+        return null;
+      });
+
+      const oneSignalIds = await Promise.all(memberPromises);
+      const validOneSignalIds = oneSignalIds.filter((id) => id);
+
+      // 通知送信
+      if (validOneSignalIds.length > 0) {
+        try {
+          await sendNotification(
+            validOneSignalIds,
+            `新しいイベントが作成されました！\n${result.store.name}で飲み会しませんか？`
+          );
+          console.log('通知送信成功');
+        } catch (error) {
+          console.error('通知送信エラー:', error);
+        }
+      }
     } catch (error) {
       console.error('イベント生成エラー:', error);
     } finally {
       setLoading(false);
     }
   };
+
+  // OneSignal IDを更新する関数を修正
+  const updateOneSignalId = async (userId) => {
+    try {
+      // 現在のサブスクリプション状態を確認
+      const status = await OneSignal.User.PushSubscription.optedIn;
+      if (!status) {
+        // サブスクリプションが無効な場合は再度オプトインを試みる
+        await OneSignal.User.PushSubscription.optIn();
+        // 状態の反映を待つ
+        await new Promise((resolve) => setTimeout(resolve, 2000));
+      }
+
+      const oneSignalId = await OneSignal.User.PushSubscription.id;
+      if (oneSignalId) {
+        const userRef = doc(db, 'users', userId);
+        await updateDoc(userRef, {
+          oneSignalId: oneSignalId,
+          oneSignalUpdatedAt: serverTimestamp(),
+        });
+        console.log('OneSignal ID更新成功:', oneSignalId);
+      }
+    } catch (error) {
+      console.error('OneSignal ID更新エラー:', error);
+    }
+  };
+
+  // コンポーネントのマウント時にOneSignal IDを更新
+  useEffect(() => {
+    if (currentUser?.uid) {
+      updateOneSignalId(currentUser.uid);
+    }
+  }, [currentUser]);
 
   return (
     <ThemeProvider theme={theme}>
@@ -474,7 +549,7 @@ function GroupChatPage() {
             sx={{
               position: 'fixed',
               right: 24,
-              bottom: 96,
+              bottom: 200,
               bgcolor: 'warning.main',
               '&:hover': {
                 bgcolor: 'warning.dark',
