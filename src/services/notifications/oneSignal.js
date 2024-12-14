@@ -8,10 +8,25 @@ export const initializeOneSignal = async () => {
       appId: import.meta.env.VITE_ONESIGNAL_APP_ID,
       allowLocalhostAsSecureOrigin: true,
       serviceWorkerPath: '/OneSignalSDKWorker.js',
-      // サイトURLに基づいて設定
-      origin: window.location.origin,
-      // サブドメインモードを無効化
-      subdomainName: false,
+      promptOptions: {
+        slidedown: {
+          prompts: [
+            {
+              type: 'push',
+              autoPrompt: true,
+              text: {
+                actionMessage: 'イベントの通知を受け取りますか？',
+                acceptButton: '許可',
+                cancelButton: '後で',
+              },
+              delay: {
+                pageViews: 1,
+                timeDelay: 0,
+              },
+            },
+          ],
+        },
+      },
     });
 
     // 通知の許可を明示的に要求
