@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Container,
   Typography,
@@ -9,6 +9,10 @@ import {
   Paper,
   Avatar,
   Chip,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
 } from '@mui/material';
 import {
   LocalBar,
@@ -17,8 +21,11 @@ import {
   Restaurant,
   Celebration,
   LocationOn,
+  NotificationsActive,
 } from '@mui/icons-material';
 import { styled } from '@mui/material/styles';
+import OneSignal from 'react-onesignal';
+import { initializeOneSignal } from '../../services/notifications/oneSignal';
 
 const StyledPaper = styled(Paper)(({ theme }) => ({
   background: 'linear-gradient(135deg, #FFD700 0%, #FFC107 100%)',
@@ -49,7 +56,63 @@ const EventCard = styled(Card)(({ theme }) => ({
   borderRadius: 12,
 }));
 
+const StyledDialog = styled(Dialog)(({ theme }) => ({
+  '& .MuiDialog-paper': {
+    borderRadius: 24,
+    padding: theme.spacing(2),
+    background: 'linear-gradient(135deg, #FFF9C4 0%, #FFECB3 100%)',
+    boxShadow: '0 8px 32px rgba(255, 193, 7, 0.2)',
+    border: '2px solid #FFB74D',
+  },
+}));
+
+const NotificationIcon = styled(NotificationsActive)(({ theme }) => ({
+  fontSize: 48,
+  color: '#FF9800',
+  animation: 'bell-ring 1s ease-in-out',
+  '@keyframes bell-ring': {
+    '0%': { transform: 'rotate(0)' },
+    '20%': { transform: 'rotate(15deg)' },
+    '40%': { transform: 'rotate(-15deg)' },
+    '60%': { transform: 'rotate(7deg)' },
+    '80%': { transform: 'rotate(-7deg)' },
+    '100%': { transform: 'rotate(0)' },
+  },
+}));
+
 const HomePage = () => {
+  const [showNotificationDialog, setShowNotificationDialog] = useState(false);
+
+  useEffect(() => {
+    // 通知許可状態を確認してからダイアログを表示
+    const checkNotificationPermission = async () => {
+      // ブラウザの通知許可状態を確認
+      const permission = await window.Notification.permission;
+
+      // OneSignalの購読状態を確認
+      const isSubscribed = await OneSignal.User.PushSubscription.optedIn;
+
+      // 通知が未許可かつOneSignalに未登録の場合のみダイアログを表示
+      if (permission !== 'granted' && !isSubscribed) {
+        const timer = setTimeout(() => {
+          setShowNotificationDialog(true);
+        }, 1000);
+        return () => clearTimeout(timer);
+      }
+    };
+
+    checkNotificationPermission();
+  }, []);
+
+  const handleNotificationPermission = async () => {
+    setShowNotificationDialog(false);
+    try {
+      await initializeOneSignal();
+    } catch (error) {
+      console.error('通知初期化エラー:', error);
+    }
+  };
+
   // サンプルの近日開催予定の飲み会データ
   const upcomingEvents = [
     {
@@ -221,6 +284,95 @@ const HomePage = () => {
           ))}
         </Grid>
       </Box>
+
+      {/* 通知許可ダイアログ */}
+      <StyledDialog
+        open={showNotificationDialog}
+        onClose={() => setShowNotificationDialog(false)}
+        maxWidth="xs"
+        fullWidth
+      >
+        <Box sx={{ textAlign: 'center', pt: 3 }}>
+          <NotificationIcon />
+        </Box>
+
+        <DialogTitle
+          sx={{
+            textAlign: 'center',
+            color: '#E65100',
+            fontWeight: 'bold',
+            fontSize: '1.5rem',
+            mt: 2,
+          }}
+        >
+          通知をオンにしませんか？ 🎉
+        </DialogTitle>
+
+        <DialogContent sx={{ px: 4 }}>
+          <Typography
+            variant="body1"
+            sx={{
+              mb: 2,
+              textAlign: 'center',
+              color: '#795548',
+              fontSize: '1.1rem',
+              lineHeight: 1.6,
+            }}
+          >
+            飲み会の新着情報や メンバーからのメッセージを
+            リアルタイムでお知らせします！ 🍻
+          </Typography>
+          <Typography
+            variant="body2"
+            sx={{
+              textAlign: 'center',
+              color: '#8D6E63',
+              fontSize: '0.9rem',
+            }}
+          >
+            ※通知は後からいつでも設定変更できます
+          </Typography>
+        </DialogContent>
+
+        <DialogActions
+          sx={{
+            p: 3,
+            flexDirection: 'column',
+            gap: 1,
+          }}
+        >
+          <Button
+            variant="contained"
+            fullWidth
+            onClick={handleNotificationPermission}
+            sx={{
+              backgroundColor: '#FF9800',
+              color: 'white',
+              borderRadius: 30,
+              py: 1.5,
+              fontSize: '1.1rem',
+              fontWeight: 'bold',
+              '&:hover': {
+                backgroundColor: '#F57C00',
+              },
+              boxShadow: '0 4px 12px rgba(255, 152, 0, 0.3)',
+            }}
+          >
+            🔔 通知を許可する
+          </Button>
+          <Button
+            onClick={() => setShowNotificationDialog(false)}
+            sx={{
+              color: '#8D6E63',
+              '&:hover': {
+                backgroundColor: 'rgba(141, 110, 99, 0.08)',
+              },
+            }}
+          >
+            後で設定する
+          </Button>
+        </DialogActions>
+      </StyledDialog>
     </Container>
   );
 };
